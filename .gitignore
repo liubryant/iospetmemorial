@@ -1,0 +1,21 @@
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# Local signing material and environment secrets
+*.p12
+*.p8
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+
+# Build exports
+*.ipa
+*.xcarchive/
+*.dSYM/
