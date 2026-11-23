@@ -152,9 +152,9 @@ struct GardenSceneView: UIViewRepresentable {
         private func buildPet(dog: Bool) {
             pet = Entity(); pet.name = "pet"; pet.position = [-0.9,0.08,0.55]; pet.orientation = simd_quatf(angle: 0.15, axis: [0,1,0]); anchor.addChild(pet)
             let fur = dog ? UIColor(red: 0.80, green: 0.61, blue: 0.40, alpha: 1) : UIColor(red: 0.93, green: 0.82, blue: 0.64, alpha: 1)
-            sphere(pet, at: [0,0.29,0], scale: [0.28,0.36,0.32], color: fur)
+            sphere(pet, at: [0,0.29,0], scale: dog ? [0.31,0.36,0.35] : [0.25,0.36,0.29], color: fur)
             sphere(pet, at: [0,0.67,0.12], scale: [0.32,0.29,0.28], color: fur)
-            sphere(pet, at: [0,0.56,0.34], scale: [0.20,0.12,0.12], color: .init(white: 0.97, alpha: 1))
+            sphere(pet, at: [0,0.56,0.34], scale: dog ? [0.20,0.12,0.16] : [0.16,0.09,0.10], color: .init(white: 0.97, alpha: 1))
             for x: Float in [-0.15,0.15] {
                 sphere(pet, at: [x,0.08,0.2], scale: [0.12,0.08,0.18], color: fur)
                 let ear = sphere(pet, at: [x*1.5, dog ? 0.69 : 0.93,0.07], scale: dog ? [0.105,0.23,0.14] : [0.12,0.19,0.08], color: fur)
@@ -163,10 +163,23 @@ struct GardenSceneView: UIViewRepresentable {
                 sphere(pet, at: [x*0.85-0.009,0.715,0.386], scale: [0.009,0.012,0.008], color: .white)
             }
             sphere(pet, at: [0,0.60,0.455], scale: [0.038,0.026,0.02], color: dog ? .darkGray : .systemPink)
-            let tail = sphere(pet, at: [0.28,0.26,-0.3], scale: [0.08,0.09,0.36], color: fur)
-            tail.orientation = simd_quatf(angle: -0.6, axis: [1,0,0])
+            if dog {
+                let tail = sphere(pet, at: [0.28,0.26,-0.3], scale: [0.10,0.10,0.26], color: fur)
+                tail.orientation = simd_quatf(angle: -0.6, axis: [1,0,0])
+            } else {
+                // Start within the body instead of floating outside its narrower silhouette.
+                sphere(pet, at: [0.10,0.28,-0.20], scale: [0.07,0.08,0.14], color: fur)
+                let tail = sphere(pet, at: [0.13,0.40,-0.37], scale: [0.05,0.06,0.26], color: fur)
+                tail.orientation = simd_quatf(angle:0.6,axis:[1,0,0])
+                sphere(pet, at: [0.13,0.55,-0.56], scale: [0.06,0.07,0.07], color: fur)
+            }
             sphere(pet, at: [0,0.40,0.01], scale: [0.27,0.04,0.30], color: UIColor(red: 0.37, green: 0.53, blue: 0.44, alpha: 1))
             sphere(pet, at: [0,0.37,0.30], scale: [0.045,0.05,0.018], color: .systemYellow)
+            if !dog {
+                for side:Float in [-1,1] {
+                    for y:Float in [0.55,0.60] { box(pet,at:[side*0.23,y,0.36],size:[0.18,0.009,0.009],color:.gray) }
+                }
+            }
             pet.generateCollisionShapes(recursive: true)
         }
         func positionCamera() {

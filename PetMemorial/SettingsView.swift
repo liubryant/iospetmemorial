@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @AppStorage("parkAvatarStyle") private var avatarStyle = "classic"
     @EnvironmentObject private var store: GardenStore
     @EnvironmentObject private var account: AccountStore
     @State private var showLogin = false
@@ -13,12 +14,17 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("账号") {
+                Section {
                     if let session=account.session {
-                        Label(session.maskedPhone,systemImage:"person.crop.circle.fill")
-                        Text("账号 ID：\(session.userId)").font(.caption).foregroundStyle(.secondary)
-                        Button("重新验证登录") { showLogin=true }.disabled(store.isSyncing)
-                        Button("退出登录",role:.destructive) { showLogout=true }.disabled(store.isSyncing)
+                        HStack(spacing:14) {
+                            Image(systemName:"person.crop.circle.fill")
+                                .font(.system(size:42)).foregroundStyle(Palette.green)
+                                .frame(width:60,height:60).background(Palette.cream,in:RoundedRectangle(cornerRadius:20))
+                            VStack(alignment:.leading,spacing:6) {
+                                Text(session.maskedPhone).font(.title3.weight(.semibold)).foregroundStyle(Palette.ink)
+                                Text("账号 ID：\(session.userId)").font(.caption).foregroundStyle(Palette.muted)
+                            }
+                        }.padding(.vertical,8)
                     } else {
                         Button { showLogin=true } label: {
                             HStack(spacing:14) {
@@ -35,36 +41,58 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    HStack(spacing: 16) {
-                        Image(systemName: "pawprint.fill").font(.system(size: 30)).foregroundStyle(Palette.green).frame(width: 62, height: 62).background(Palette.cream, in: RoundedRectangle(cornerRadius: 20))
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("爪印花园").font(.title2.weight(.medium))
-                            Text("把陪伴，留在每一个平常日子里").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }.padding(.vertical, 10)
+                    Picker(selection: $avatarStyle) {
+                        Text("默认 · 绿衣短发").tag("classic")
+                        Text("男生 · 蓝衣短发").tag("male")
+                        Text("女生 · 自然齐肩发").tag("female")
+                    } label: { settingsLabel("人物形象",icon:"person.crop.square") }
+                    .tint(Palette.green)
+                } header: { Text("外观偏好") } footer: {
+                    Text("外观仅保存在本机，也可在小镇顶部菜单切换。")
                 }
                 Section {
-                    LabeledContent("保存方式", value: store.state.cloudEnabled ? "本机 + 私密云备份" : "仅本机")
-                    if let date = store.state.lastBackup { LabeledContent("上次备份") { Text(date, format: .dateTime.month().day().hour().minute()).font(.caption) } }
+                    HStack(spacing:12) {
+                        Image(systemName:store.state.cloudEnabled ? "checkmark.icloud" : "iphone")
+                            .font(.title2).foregroundStyle(Palette.green)
+                        VStack(alignment:.leading,spacing:5) {
+                            Text(store.state.cloudEnabled ? "本机 + 私密云备份" : "资料保存在本机")
+                                .font(.subheadline.weight(.medium)).foregroundStyle(Palette.ink)
+                            if let date = store.state.lastBackup {
+                                Text("上次备份：\(date.formatted(.dateTime.month().day().hour().minute()))")
+                                    .font(.caption).foregroundStyle(Palette.muted)
+                            } else { Text("保存方式").font(.caption).foregroundStyle(Palette.muted) }
+                        }
+                    }.padding(.vertical,6)
                     Button {
                         if store.state.cloudEnabled { Task { await store.backup() } } else { consent = true }
-                    } label: { HStack { Label(store.state.cloudEnabled ? "立即备份" : "开启云备份", systemImage: "icloud.and.arrow.up"); Spacer(); if store.isSyncing { ProgressView() } } }
-                        .disabled(store.garden == nil || store.isSyncing)
-                    Button { do { key = try BackupKey.read() } catch { store.error = error.localizedDescription } } label: { Label("保管备份钥匙", systemImage: "key") }.disabled(account.session != nil || !store.state.cloudEnabled || store.isSyncing)
-                    Button { if account.session != nil { restoreAccount=true } else { restore=true } } label: { Label(account.session != nil ? "恢复账号云备份" : "恢复云端花园", systemImage: "arrow.counterclockwise.icloud") }.disabled(store.isSyncing)
+                    } label: { HStack { settingsLabel(store.state.cloudEnabled ? "立即备份" : "开启云备份", icon: "icloud.and.arrow.up"); Spacer(); if store.isSyncing { ProgressView() } } }
+                        .disabled(store.garden == nil || store.isSyncing).opacity(store.garden == nil || store.isSyncing ? 0.4 : 1)
+                    Button { do { key = try BackupKey.read() } catch { store.error = error.localizedDescription } } label: { settingsLabel("保管备份钥匙", icon: "key") }.disabled(account.session != nil || !store.state.cloudEnabled || store.isSyncing).opacity(account.session != nil || !store.state.cloudEnabled || store.isSyncing ? 0.4 : 1)
+                    Button { if account.session != nil { restoreAccount=true } else { restore=true } } label: { settingsLabel(account.session != nil ? "恢复账号云备份" : "恢复云端花园", icon: "arrow.counterclockwise.icloud") }.disabled(store.isSyncing)
                 } header: { Text("记忆备份") } footer: {
                     Text(account.session != nil ? "登录后，已开启的云备份归属当前账号。换设备使用同一手机号登录即可恢复；本机未备份内容不会自动上传。" : "云备份开启后修改会自动同步。游客请保管备份钥匙；也可以登录并关联账号，通过账号恢复。")
                 }
+                if account.session != nil {
+                    Section("账号管理") {
+                        Button { showLogin=true } label: { settingsLabel("重新验证登录",icon:"person.badge.key") }.disabled(store.isSyncing)
+                        Button("退出登录",role:.destructive) { showLogout=true }.disabled(store.isSyncing)
+                    }
+                }
                 Section("关于") {
-                    NavigationLink { PrivacyView() } label: { Label("隐私与使用说明", systemImage: "hand.raised") }
+                    NavigationLink { PrivacyView() } label: { settingsLabel("隐私与使用说明", icon: "hand.raised") }
                     LabeledContent("版本", value: "1.0.0 · 首版")
-                    Text("没有要求你放下，也不急着说再见。\n愿这里成为你安放想念的小小角落。")
-                        .font(.subheadline).lineSpacing(6).foregroundStyle(Palette.muted).padding(.vertical, 10)
                 }
                 if store.garden != nil {
                     Section { Button("删除全部纪念资料", role: .destructive) { deletion = true }.disabled(store.isSyncing) } footer: { Text("删除照片、信件和纪念资料，释放已认领的公开碑位；已开启的云备份也会一并删除。不会删除系统相册的原图。") }
                 }
-            }.scrollContentBackground(.hidden).background(Palette.cream).navigationTitle("我的小花园")
+                Section {
+                    VStack(spacing:8) {
+                        Label("爪印花园",systemImage:"pawprint.fill").font(.subheadline.weight(.medium))
+                        Text("没有要求你放下，也不急着说再见。\n愿这里成为你安放想念的小小角落。")
+                            .font(.caption).lineSpacing(5).multilineTextAlignment(.center)
+                    }.foregroundStyle(Palette.muted).frame(maxWidth:.infinity).padding(.vertical,12)
+                }.listRowBackground(Color.clear)
+            }.listStyle(.insetGrouped).scrollContentBackground(.hidden).background(Palette.cream).navigationTitle("我的")
                 .alert("开启私密云备份？", isPresented: $consent) {
                     Button("暂不开启", role: .cancel) { }
                     Button("同意并备份") { Task { await store.enableCloud() } }
@@ -91,6 +119,15 @@ struct SettingsView: View {
                 }
         }
     }
+    private func settingsLabel(_ title:String, icon:String) -> some View {
+        HStack(spacing:12) {
+            Image(systemName:icon).font(.system(size:16,weight:.medium))
+                .foregroundStyle(Palette.green).frame(width:32,height:32)
+                .background(Palette.green.opacity(0.08),in:RoundedRectangle(cornerRadius:10))
+            Text(title).foregroundStyle(Palette.ink)
+        }.padding(.vertical,2)
+    }
+
 }
 struct RestoreView: View {
     @EnvironmentObject private var store: GardenStore

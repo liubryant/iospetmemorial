@@ -43,6 +43,7 @@ enum ParkLayout {
 }
 
 struct MemorialParkScene: UIViewRepresentable {
+    @AppStorage("parkAvatarStyle") private var avatarStyle = "classic"
     @ObservedObject var controls: ParkControls
     let garden: MemorialGarden?
     let plots: [PublicMonument]
@@ -51,10 +52,10 @@ struct MemorialParkScene: UIViewRepresentable {
         let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
         view.renderOptions = [.disableMotionBlur, .disableDepthOfField, .disableCameraGrain]
         context.coordinator.attach(view)
-        context.coordinator.refresh(garden, plots: plots)
+        context.coordinator.updateAvatar(avatarStyle); context.coordinator.refresh(garden, plots: plots)
         return view
     }
-    func updateUIView(_ view: ARView, context: Context) { context.coordinator.refresh(garden, plots: plots) }
+    func updateUIView(_ view: ARView, context: Context) { context.coordinator.updateAvatar(avatarStyle); context.coordinator.refresh(garden, plots: plots) }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
         coordinator.subscription?.cancel(); coordinator.controls.movement = .zero
         view.scene.anchors.removeAll()
@@ -82,6 +83,7 @@ struct MemorialParkScene: UIViewRepresentable {
         var strollNorth = true
         let sunlight = DirectionalLight()
         var limbs: [Entity] = []
+        var avatarStyle = "classic"
         var subscription: Cancellable?
         var yaw: Float = 0
         var distance: Float = 10.5
@@ -197,16 +199,55 @@ struct MemorialParkScene: UIViewRepresentable {
             }
             parent.addChild(surface)
         }
+        func updateAvatar(_ style: String) {
+            let valid = ["classic", "male", "female"].contains(style) ? style : "classic"
+            guard valid != avatarStyle else { return }
+            avatarStyle = valid
+            for child in Array(player.children) { child.removeFromParent() }
+            limbs.removeAll()
+            makePlayer()
+        }
         func makePlayer() {
+            let girl = avatarStyle == "female"
             let skin = UIColor(red:0.92,green:0.75,blue:0.59,alpha:1)
+            let hair = girl ? UIColor(red:0.35,green:0.22,blue:0.16,alpha:1) : UIColor(red:0.25,green:0.18,blue:0.14,alpha:1)
+            let shirt = girl ? UIColor(red:0.96,green:0.58,blue:0.48,alpha:1) : avatarStyle == "male" ? UIColor(red:0.40,green:0.53,blue:0.67,alpha:1) : UIColor(red:0.40,green:0.59,blue:0.51,alpha:1)
             sphere(player,[0,1.23,0],[0.34,0.35,0.32],skin)
-            sphere(player,[0,1.40,0.02],[0.36,0.24,0.34],UIColor(red:0.25,green:0.18,blue:0.14,alpha:1))
-            box(player,[0,0.72,0],[0.48,0.55,0.32],UIColor(red:0.40,green:0.59,blue:0.51,alpha:1))
+            sphere(player,[0,1.40,0.02],[0.36,0.24,0.34],hair)
+            box(player,[0,0.72,0],[0.48,0.55,0.32],shirt)
+            if girl {
+                // A continuous shoulder-length bob, with no braid, bun or ribbon.
+                sphere(player,[0,1.23,0.13],[0.35,0.35,0.245],hair)
+                sphere(player,[-0.10,1.44,-0.22],[0.23,0.10,0.115],hair)
+                for side:Float in [-1,1] {
+                    sphere(player,[side*0.29,1.20,0.015],[0.085,0.26,0.20],hair)
+                    sphere(player,[side*0.20,1.15,-0.268],[0.055,0.025,0.018],.init(red:0.94,green:0.55,blue:0.48,alpha:1))
+                    box(player,[side*0.09,0.86,-0.17],[0.018,0.14,0.018],.white)
+                    box(player,[side*0.19,0.81,0.17],[0.04,0.35,0.045],.init(red:0.88,green:0.77,blue:0.55,alpha:1))
+                }
+                sphere(player,[0,0.96,0.12],[0.23,0.095,0.16],shirt)
+                box(player,[0,0.71,-0.17],[0.25,0.09,0.025],.init(red:0.91,green:0.47,blue:0.39,alpha:1))
+                box(player,[0,0.76,0.24],[0.30,0.30,0.13],.init(red:0.97,green:0.84,blue:0.58,alpha:1))
+                box(player,[0,0.70,0.32],[0.21,0.10,0.04],.init(red:0.86,green:0.70,blue:0.43,alpha:1))
+            }
             for side: Float in [-1,1] {
                 let leg = Entity(); leg.position = [side*0.14,0.48,0]; player.addChild(leg)
-                box(leg,[0,-0.18,0],[0.18,0.35,0.19],.init(white:0.35,alpha:1)); sphere(leg,[0,-0.39,-0.06],[0.12,0.10,0.19],.init(white:0.95,alpha:1)); limbs.append(leg)
-                let arm = Entity(); arm.position = [side*0.32,0.9,0]; player.addChild(arm)
-                sphere(arm,[0,-0.2,0],[0.10,0.27,0.10],skin); limbs.append(arm)
+                if girl {
+                    box(leg,[0,-0.07,0],[0.19,0.19,0.20],.init(red:0.43,green:0.59,blue:0.66,alpha:1))
+                    sphere(leg,[0,-0.22,0],[0.07,0.13,0.075],skin)
+                    box(leg,[0,-0.32,0],[0.15,0.10,0.16],.white)
+                } else { box(leg,[0,-0.18,0],[0.18,0.35,0.19],.init(white:0.35,alpha:1)) }
+                sphere(leg,[0,-0.39,-0.06],[0.12,0.10,0.19],.init(white:0.95,alpha:1))
+                if girl { box(leg,[0,-0.38,-0.18],[0.14,0.035,0.035],shirt) }
+                limbs.append(leg)
+                let arm = Entity(); arm.position = [side*(girl ? 0.28 : 0.32),0.9,0]; player.addChild(arm)
+                if girl {
+                    // Slim short sleeves, a separate forearm and small rounded hand.
+                    box(arm,[0,-0.055,0],[0.14,0.17,0.17],shirt)
+                    sphere(arm,[0,-0.22,0],[0.055,0.13,0.06],skin)
+                    sphere(arm,[0,-0.35,-0.005],[0.063,0.075,0.065],skin)
+                } else { sphere(arm,[0,-0.2,0],[0.10,0.27,0.10],skin) }
+                limbs.append(arm)
                 sphere(player,[side*0.12,1.25,-0.29],[0.025,0.035,0.025],.black)
             }
         }
@@ -225,10 +266,15 @@ struct MemorialParkScene: UIViewRepresentable {
             pet.name="companion"
             let dog=species=="dog"
             let fur=dog ? UIColor(red:0.77,green:0.57,blue:0.36,alpha:1):UIColor(red:0.9,green:0.82,blue:0.68,alpha:1)
-            sphere(pet,[0,0.38,0.05],[0.24,0.22,0.37],fur)
-            sphere(pet,[0,0.62,-0.25],[0.25,0.24,0.23],fur)
-            sphere(pet,[0,0.53,-0.44],[0.14,0.10,0.10],.init(white:0.97,alpha:1))
-            sphere(pet,[0,0.58,-0.51],[0.045,0.033,0.025],.init(red:0.36,green:0.27,blue:0.24,alpha:1))
+            sphere(pet,[0,0.38,0.05],dog ? [0.27,0.24,0.40] : [0.21,0.22,0.32],fur)
+            sphere(pet,[0,0.62,-0.25],dog ? [0.25,0.24,0.25] : [0.26,0.23,0.20],fur)
+            sphere(pet,[0,0.53,-0.44],dog ? [0.15,0.11,0.16] : [0.13,0.08,0.07],.init(white:0.97,alpha:1))
+            sphere(pet,[0,0.58,dog ? -0.59 : -0.51],[0.04,0.03,0.025],dog ? .darkGray : .systemPink)
+            if !dog {
+                for side:Float in [-1,1] {
+                    for y:Float in [0.52,0.57] { box(pet,[side*0.20,y,-0.45],[0.18,0.009,0.009],.init(white:0.42,alpha:1)) }
+                }
+            }
             for side:Float in [-1,1] {
                 sphere(pet,[side*0.105,0.66,-0.45],[0.032,0.044,0.022],.init(white:0.17,alpha:1))
                 sphere(pet,[side*0.115,0.68,-0.469],[0.009,0.011,0.008],.white)
@@ -243,8 +289,17 @@ struct MemorialParkScene: UIViewRepresentable {
                     sphere(leg,[0,-0.14,0],[0.065,0.16,0.08],fur);petLegs.append(leg)
                 }
             }
-            petTail.position=[0,0.45,0.35];pet.addChild(petTail)
-            sphere(petTail,[0,0.17,0.1],[0.065,0.24,0.065],fur)
+            // Pivot is inside the rump; overlapping segments stay attached while swaying.
+            petTail.orientation = simd_quatf(angle:0,axis:[0,0,1])
+            petTail.position = dog ? [0,0.45,0.35] : [0,0.42,0.27]
+            pet.addChild(petTail)
+            if dog {
+                sphere(petTail,[0,0.17,0.1],[0.09,0.20,0.09],fur)
+            } else {
+                sphere(petTail,[0,0.045,0.025],[0.065,0.11,0.065],fur)
+                sphere(petTail,[0,0.23,0.065],[0.05,0.22,0.05],fur)
+                sphere(petTail,[0,0.43,0.04],[0.055,0.075,0.075],fur)
+            }
             box(pet,[0,0.48,-0.22],[0.38,0.06,0.20],UIColor(red:0.37,green:0.57,blue:0.46,alpha:1))
             pet.generateCollisionShapes(recursive:true)
             // A small floating heart cluster appears only while being petted.

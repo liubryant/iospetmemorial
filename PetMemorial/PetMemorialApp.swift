@@ -72,10 +72,11 @@ struct HomeView: View {
                             Button { edit = true } label: { Image(systemName: store.garden == nil ? "plus" : "slider.horizontal.3").font(.title3).frame(width: 44, height: 44).background(.white, in: Circle()) }.accessibilityLabel("编辑纪念资料")
                         }
                         ZStack(alignment: .bottomLeading) {
-                            Group {
-                                if immersive { Palette.cream }
-                                else { GardenSceneView(garden: store.garden, onTap: interact) }
-                            }.frame(height: min(geometry.size.width * 1.12, 470))
+                            // Keep the same scene alive through presentation and dismissal.
+                            // Replacing it with a color flashes during the cover transition
+                            // and also loses the user's camera angle and zoom.
+                            GardenSceneView(garden: store.garden, onTap: interact)
+                                .frame(height: min(geometry.size.width * 1.12, 470))
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(store.garden == nil ? "一方小天地，一份长久的陪伴" : "风会记得，你来过这里。")
                                     .font(.system(size: 17, weight: .medium, design: .serif))
@@ -175,6 +176,7 @@ struct GardenEditor: View {
     }
 }
 struct ImmersiveGarden: View {
+    @AppStorage("parkAvatarStyle") private var avatarStyle = "classic"
     @EnvironmentObject private var store: GardenStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -189,6 +191,11 @@ struct ImmersiveGarden: View {
                     Button { dismiss() } label: { Image(systemName: "chevron.down").frame(width:44,height:44).background(.regularMaterial,in:Circle()) }.accessibilityLabel("返回")
                     Spacer()
                     Menu {
+                        Picker("人物形象", selection: $avatarStyle) {
+                            Text("默认 · 绿衣短发").tag("classic")
+                            Text("男生 · 蓝衣短发").tag("male")
+                            Text("女生 · 自然齐肩发").tag("female")
+                        }
                         Button("刷新碑位") { Task { await park.refresh() } }
                         Button("晴日") { store.update { $0.theme="sage" } }
                         Button("黄昏") { store.update { $0.theme="sunset" } }
