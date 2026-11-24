@@ -2,15 +2,28 @@ import SwiftUI
 import RealityKit
 import UIKit
 
+final class GardenPreviewCapture: ObservableObject {
+    weak var view: ARView?
+    var azimuth:Float=0.16
+    var elevation:Float=0.55
+    var distance:Float=7.8
+    func capture(_ completion:@escaping (UIImage?)->Void) {
+        guard let view else { completion(nil);return }
+        view.snapshot(saveToHDR:false) { image in DispatchQueue.main.async { completion(image) } }
+    }
+}
+
 /// Original procedural assets: no third-party models, textures or runtime downloads.
 struct GardenSceneView: UIViewRepresentable {
+    var previewCapture: GardenPreviewCapture? = nil
     let garden: MemorialGarden?
     var onTap: (String) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(onTap: onTap) }
+    func makeCoordinator() -> Coordinator { Coordinator(onTap:onTap,previewCapture:previewCapture) }
     func makeUIView(context: Context) -> ARView {
         let view = GardenCanvas(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
         view.renderOptions = [.disableMotionBlur, .disableDepthOfField, .disableCameraGrain]
         view.didLayout = { [weak coordinator = context.coordinator] in coordinator?.positionCamera() }
+        previewCapture?.view=view
         context.coordinator.attach(view)
         context.coordinator.refresh(garden)
         return view
@@ -31,7 +44,11 @@ struct GardenSceneView: UIViewRepresentable {
         private var elevation: Float = 0.55
         private var distance: Float = 7.8
         private var jumping = false
-        init(onTap: @escaping (String) -> Void) { self.onTap = onTap }
+        weak var previewCapture:GardenPreviewCapture?
+        init(onTap: @escaping (String) -> Void,previewCapture:GardenPreviewCapture?) {
+            self.onTap=onTap;self.previewCapture=previewCapture
+            if let previewCapture { azimuth=previewCapture.azimuth;elevation=previewCapture.elevation;distance=previewCapture.distance }
+        }
         func attach(_ view: ARView) {
             self.view = view
             view.scene.addAnchor(anchor)
@@ -40,8 +57,8 @@ struct GardenSceneView: UIViewRepresentable {
             view.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan(_:))))
             view.addGestureRecognizer(UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:))))
             view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tap(_:))))
-            view.accessibilityLabel = "可旋转缩放的三维纪念花园"
-            view.accessibilityHint = "单指拖动旋转，双指缩放，轻触宠物互动"
+            view.accessibilityLabel = L("可旋转缩放的三维纪念花园")
+            view.accessibilityHint = L("单指拖动旋转，双指缩放，轻触宠物互动")
             positionCamera()
         }
         func refresh(_ garden: MemorialGarden?) {
@@ -183,6 +200,7 @@ struct GardenSceneView: UIViewRepresentable {
             pet.generateCollisionShapes(recursive: true)
         }
         func positionCamera() {
+            previewCapture?.azimuth=azimuth;previewCapture?.elevation=elevation;previewCapture?.distance=distance
             let size = view?.bounds.size ?? .zero
             let aspect = size.height > 0 ? Float(size.width / size.height) : 0.9
             let fittedDistance = distance * max(1, 0.9 / max(0.35, aspect))

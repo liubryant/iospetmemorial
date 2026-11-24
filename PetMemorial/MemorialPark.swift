@@ -16,6 +16,44 @@ final class ParkControls: ObservableObject {
     @Published var venue: TownPlace?
     @Published var nearbyPlace: TownPlace?
     var ballRequest = 0
+    @Published var forest = false
+    @Published var forestRequested = false
+    @Published var forestDetail: String?
+    @Published var forestNearby: String?
+    @Published var resting = false
+    var forestAction: String?
+    var townPose: ParkPose?
+    var forestPose: ParkPose?
+
+}
+
+struct ParkPose {
+    var position: SIMD3<Float>
+    var orientation: simd_quatf
+    var yaw: Float
+    var distance: Float
+}
+enum ForestLayout {
+    static let entry = SIMD3<Float>(0,0,11)
+    static let tree = SIMD3<Float>(0,0,-11)
+    static let bench = SIMD3<Float>(6,0,0)
+    static let photos: [SIMD3<Float>] = [[-8,0,-5],[-9,0,1],[-7,0,7]]
+    static var trees: [SIMD3<Float>] {
+        (0..<24).map { i in
+            let angle = Float(i) * .pi * 2 / 24
+            let radius: Float = i % 2 == 0 ? 13 : 15
+            return [sin(angle)*radius,0,cos(angle)*radius]
+        }.filter { !($0.z>10 && abs($0.x)<2) }
+    }
+    static func isWalkable(_ p: SIMD3<Float>) -> Bool {
+        guard abs(p.x)<16.5 && abs(p.z)<16.5 else { return false }
+        let onBridge = abs(p.z-2)<0.8 && abs(p.x)<5.4
+        if p.x*p.x/20.25 + p.z*p.z/25 < 1 && !onBridge { return false }
+        if simd_distance(p,tree)<1.2 { return false }
+        if abs(p.x-6)<0.55 && abs(p.z)<1.1 { return false }
+        if trees.contains(where:{simd_distance(p,$0)<0.65}) { return false }
+        return !photos.contains { abs(p.x-$0.x)<0.8 && abs(p.z-$0.z)<0.45 }
+    }
 }
 
 enum ParkLayout {
@@ -57,11 +95,14 @@ struct MemorialParkScene: UIViewRepresentable {
     }
     func updateUIView(_ view: ARView, context: Context) { context.coordinator.updateAvatar(avatarStyle); context.coordinator.refresh(garden, plots: plots) }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
-        coordinator.subscription?.cancel(); coordinator.controls.movement = .zero
+        coordinator.savePose(); coordinator.subscription?.cancel(); coordinator.subscription = nil; coordinator.controls.movement = .zero
         view.scene.anchors.removeAll()
     }
     final class Coordinator: NSObject {
         let controls: ParkControls
+        let forest: Bool
+        var forestRoute = 0
+        var forestCanopies:[Entity] = []
         weak var view: ARView?
         let root = AnchorEntity(world: .zero)
         let camera = PerspectiveCamera()
@@ -97,7 +138,7 @@ struct MemorialParkScene: UIViewRepresentable {
         var boxMeshes:[SIMD3<Float>:MeshResource] = [:]
         var plazaLights:[PointLight] = []
         var lampGlow:[ModelEntity] = []
-        init(_ controls: ParkControls) { self.controls = controls }
+        init(_ controls: ParkControls) { self.controls = controls; self.forest = controls.forest }
         func attach(_ view: ARView) {
             self.view = view; view.scene.addAnchor(root)
             root.addChild(camera); root.addChild(monuments); root.addChild(player);root.addChild(pet);root.addChild(affection)
@@ -107,6 +148,11 @@ struct MemorialParkScene: UIViewRepresentable {
             let light = sunlight; light.light.intensity = 2800
             light.shadow = .init(maximumDistance: 40, depthBias: 2)
             light.look(at: .zero, from: [8,18,8], relativeTo: nil); root.addChild(light)
+            if forest {
+                buildForest()
+                finishAttach(view)
+                return
+            }
             box(root, [0,-0.15,-3.5], [26,0.3,34], UIColor(red: 0.66, green: 0.75, blue: 0.52, alpha: 1))
             let path = UIColor(red: 0.91, green: 0.86, blue: 0.73, alpha: 1)
             box(root, [0,0.015,-3.5], [3.4,0.03,33], path)
@@ -130,17 +176,32 @@ struct MemorialParkScene: UIViewRepresentable {
                 for side: Float in [-1,1] { box(root,[side*radius,0.5,10],[0.15,1,0.15],color) }
             }
             makeTown()
-            makePlayer(); player.position = TownPlace.plaza.arrival
+            buildForestPortal()
+            finishAttach(view)
+        }
+        func finishAttach(_ view: ARView) {
+            makePlayer(); player.position = forest ? ForestLayout.entry : TownPlace.plaza.arrival
+            if let pose = forest ? controls.forestPose : controls.townPose {
+                player.position=pose.position;player.orientation=pose.orientation;yaw=pose.yaw;distance=pose.distance
+            }
             view.addGestureRecognizer(UIPanGestureRecognizer(target:self,action:#selector(pan(_:))))
             view.addGestureRecognizer(UIPinchGestureRecognizer(target:self,action:#selector(pinch(_:))))
             view.addGestureRecognizer(UITapGestureRecognizer(target:self,action:#selector(tap(_:))))
-            view.accessibilityLabel = "可以行走的三维纪念园"
-            view.accessibilityIdentifier = "parkScene"
+            view.accessibilityLabel = forest ? L("可以行走的回忆森林") : L("可以行走的三维纪念园")
+            view.accessibilityIdentifier = forest ? "forestScene" : "parkScene"
             view.isAccessibilityElement = true
             subscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in self?.step(Float(event.deltaTime)) }
             updateCamera()
         }
         func refresh(_ garden: MemorialGarden?, plots: [PublicMonument]) {
+            if forest {
+                let species=garden?.species ?? ""
+                if species != petSpecies { petSpecies=species;makePet(species);pet.position=player.position+[0.6,0,0.6] }
+                pet.isEnabled = garden != nil
+                let key = "\(garden?.name ?? "")|\(garden?.photos.map { $0.id + $0.caption }.joined() ?? "")"
+                if key != signature { signature=key; refreshForestMemories(garden) }
+                return
+            }
             let key = plots.map { "\($0.index)|\($0.name)|\($0.photo.hashValue)|\($0.flowers ?? 0)|\($0.candles ?? 0)" }.joined(separator:",") + "|\(garden?.theme ?? "sage")|\(garden?.name ?? "")|\(garden?.photos.first?.id ?? "")|\(garden?.flowerCount ?? 0)|\(garden?.candleCount ?? 0)"
             let species=garden?.species ?? ""
             if species != petSpecies { petSpecies=species;makePet(species);pet.position=player.position+[0.6,0,0.6] }
@@ -162,7 +223,7 @@ struct MemorialParkScene: UIViewRepresentable {
                 sphere(stone,[0,1.1,0],[0.43,0.4,0.18],cream)
                 let monument = plots.first { $0.index == index }
                 let own = monument?.isMine == true
-                plaque(stone, title: monument?.name ?? String(format:"%02d · 空位",index+1), photo: monument?.memoryPhoto)
+                plaque(stone, title: monument?.name ?? String(format:L("%02d · 空位"),index+1), photo: monument?.memoryPhoto)
                 if monument != nil {
                     for n in 0..<min((monument?.flowers ?? 0) + (own ? garden?.flowerCount ?? 0 : 0),6) {
                         let x = Float(n)*0.18-0.45
@@ -318,7 +379,7 @@ struct MemorialParkScene: UIViewRepresentable {
                 lastBallRequest = controls.ballRequest; controls.petSitting = false
                 fetchStart = player.position; fetchTarget = TownPlace.meadow.arrival + [0,0,-3]
                 fetchTime = 4; ball.position = fetchTarget + [0,0.2,0]; ball.isEnabled = true
-                controls.petMessage = "去追小球吧，我们在这里等你。"
+                controls.petMessage = L("去追小球吧，我们在这里等你。")
             }
             if fetchTime > 0 {
                 fetchTime = max(0, fetchTime-dt)
@@ -330,15 +391,15 @@ struct MemorialParkScene: UIViewRepresentable {
                 }
                 for (i,leg) in petLegs.enumerated() { leg.orientation=simd_quatf(angle:sin(Float(CACurrentMediaTime())*12)*0.4*(i%2==0 ? 1:-1),axis:[1,0,0]) }
                 if fetchTime < 2 { ball.position=pet.position+[0,0.3,-0.3] }
-                if fetchTime == 0 { ball.isEnabled=false;breadcrumbs=[];controls.petMessage="它把小球带回来了，再陪它玩一次吧。" }
+                if fetchTime == 0 { ball.isEnabled=false;breadcrumbs=[];controls.petMessage=L("它把小球带回来了，再陪它玩一次吧。") }
                 return
             }
             if lastPetRequest != controls.petRequest {
                 lastPetRequest=controls.petRequest
                 if simd_distance(pet.position,player.position)<2.2 {
-                    affectionTime=3;controls.petMessage="轻轻摸摸你，就像从前一样。"
+                    affectionTime=3;controls.petMessage=L("轻轻摸摸你，就像从前一样。")
                     UIImpactFeedbackGenerator(style:.soft).impactOccurred()
-                } else { controls.petSitting=false;controls.petMessage="它正向你走来，再等等它。" }
+                } else { controls.petSitting=false;controls.petMessage=L("它正向你走来，再等等它。") }
             }
             let last=breadcrumbs.last ?? pet.position
             if simd_distance(last,player.position)>0.18 { breadcrumbs.append(player.position) }
@@ -350,7 +411,7 @@ struct MemorialParkScene: UIViewRepresentable {
                 else {
                     let velocity=simd_normalize(delta)*min(simd_length(delta),dt*3.1)
                     let next=pet.position+velocity
-                    if ParkLayout.isWalkable(next) { pet.position=next;moving=true }
+                    if walkable(next) { pet.position=next;moving=true }
                     else { breadcrumbs.removeFirst() }
                     pet.orientation=simd_quatf(angle:atan2(-delta.x,-delta.z),axis:[0,1,0])
                 }
@@ -366,6 +427,7 @@ struct MemorialParkScene: UIViewRepresentable {
         func step(_ elapsed: Float) {
             guard controls.active else { return }
             let dt = min(elapsed,0.05)
+            if forest { stepForest(dt); return }
             fountainTime += dt
             fountainAccumulator += dt
             let nearFountain=simd_distance(player.position,TownPlace.plaza.center)<16
@@ -426,7 +488,7 @@ struct MemorialParkScene: UIViewRepresentable {
                 nearestTick = 0
                 let place = TownPlace.allCases.first { simd_distance(player.position,$0.arrival)<3 }
                 if controls.nearbyPlace != place { controls.nearbyPlace=place }
-                view?.accessibilityValue = String(format:"位置 %.2f, %.2f",player.position.x,player.position.z)
+                view?.accessibilityValue = String(format:L("位置 %.2f, %.2f"),player.position.x,player.position.z)
                 let near = (0..<ParkLayout.count).min { simd_distance(player.position,ParkLayout.position($0)) < simd_distance(player.position,ParkLayout.position($1)) }
                 let value = near.flatMap { simd_distance(player.position,ParkLayout.position($0)) < 2.5 ? $0 : nil }
                 if controls.nearest != value { controls.nearest = value }
@@ -434,13 +496,28 @@ struct MemorialParkScene: UIViewRepresentable {
         }
         func updateCamera() {
             let target = player.position + [0,0.9,0]
-            camera.look(at:target,from:target+[sin(yaw)*distance,4.6,cos(yaw)*distance],relativeTo:nil)
+            let eye=target+[sin(yaw)*distance,4.6,cos(yaw)*distance]
+            camera.look(at:target,from:eye,relativeTo:nil)
+            if forest {
+                let ray=eye-target
+                for tree in forestCanopies {
+                    let center=tree.position+[0,2.7,0]
+                    let t=max(0,min(1,simd_dot(center-target,ray)/simd_length_squared(ray)))
+                    let visible=simd_distance(center,target+ray*t)>2.1
+                    if tree.isEnabled != visible { tree.isEnabled=visible }
+                }
+            }
         }
         @objc func pan(_ gesture: UIPanGestureRecognizer) { let d=gesture.translation(in:view); yaw -= Float(d.x)*0.006; gesture.setTranslation(.zero,in:view); updateCamera() }
         @objc func pinch(_ gesture: UIPinchGestureRecognizer) { distance=max(4,min(11,distance/Float(gesture.scale))); gesture.scale=1; updateCamera() }
         @objc func tap(_ gesture: UITapGestureRecognizer) {
             var entity = view?.entity(at:gesture.location(in:view))
             while let current = entity {
+                if current.name == "forest-portal" { controls.forestRequested=true; return }
+                if current.name.hasPrefix("forest-") {
+                    controls.movement = .zero; controls.autoWalk=false
+                    activateForest(String(current.name.dropFirst(7))); return
+                }
                 if current.name.hasPrefix("town-"), let place=TownPlace(rawValue:String(current.name.dropFirst(5))) {
                     controls.movement = .zero; controls.autoWalk=false
                     controls.destination=place.arrival; controls.venue=place; return
@@ -479,7 +556,10 @@ struct MemorialParkScene: UIViewRepresentable {
                     }
                 }
                 let sign=ModelEntity(mesh:.generateText(place.title,extrusionDepth:0.015,font:.systemFont(ofSize:0.35,weight:.semibold)),materials:[SimpleMaterial(color:green,roughness:1,isMetallic:false)])
-                sign.position=[-1.5,place == .memories || place == .post ? 2.7:0.8,place == .memories || place == .post ? 2.5:2]
+                let bounds=sign.visualBounds(relativeTo:nil)
+                let fit=min(1,3.8/max(bounds.extents.x,0.01))
+                sign.scale = SIMD3<Float>(repeating:fit)
+                sign.position=[-bounds.center.x*fit,place == .memories || place == .post ? 2.7:0.8,place == .memories || place == .post ? 2.5:2]
                 if place != .plaza { building.addChild(sign) }
                 // One simple hit target per destination; decorative water has no collision work.
                 let size:SIMD3<Float> = place == .memories || place == .post ? [6,3.5,5] : [3.6,2.5,3.6]
@@ -570,6 +650,195 @@ struct MemorialParkScene: UIViewRepresentable {
                 }
             }
         }
+        func savePose() {
+            let pose=ParkPose(position:controls.resting && forest ? [7.3,0,0] : player.position,orientation:player.orientation,yaw:yaw,distance:distance)
+            if forest { controls.forestPose=pose } else { controls.townPose=pose }
+        }
+        func walkable(_ p:SIMD3<Float>) -> Bool { forest ? ForestLayout.isWalkable(p) : ParkLayout.isWalkable(p) }
+        func forestSign(_ parent:Entity,_ title:String,_ position:SIMD3<Float>,size:Float=0.24) {
+            let mesh=MeshResource.generateText(title,extrusionDepth:0.002,font:.systemFont(ofSize:CGFloat(size),weight:.medium))
+            let sign=ModelEntity(mesh:mesh,materials:[SimpleMaterial(color:UIColor(red:0.28,green:0.38,blue:0.28,alpha:1),roughness:1,isMetallic:false)])
+            let bounds=sign.visualBounds(relativeTo:nil)
+            let fit=min(1,2.8/max(bounds.extents.x,0.01))
+            sign.scale = SIMD3<Float>(repeating:fit)
+            sign.position=position+[-bounds.center.x*fit,0,0];parent.addChild(sign)
+        }
+        func forestHit(_ entity:Entity,_ size:SIMD3<Float>) {
+            entity.components.set(CollisionComponent(shapes:[.generateBox(size:size).offsetBy(translation:[0,size.y/2,0])]))
+        }
+        func buildForestPortal() {
+            let portal=Entity();portal.name="forest-portal";portal.position=[15,0,25];root.addChild(portal)
+            let timber=UIColor(red:0.39,green:0.27,blue:0.18,alpha:1)
+            let cream=UIColor(red:0.96,green:0.88,blue:0.67,alpha:1)
+            let gold=UIColor(red:0.88,green:0.63,blue:0.25,alpha:1)
+            let rust=UIColor(red:0.74,green:0.40,blue:0.22,alpha:1)
+            // A static woodland gateway, distinct from the open green companion meadow.
+            box(portal,[0,0.04,0],[6.2,0.06,4.7],UIColor(red:0.63,green:0.53,blue:0.36,alpha:1))
+            box(portal,[0,0.08,0.7],[2.6,0.04,4.8],cream)
+            for x:Float in [-1.55,1.55] {
+                box(portal,[x,1.25,0],[0.28,2.5,0.32],timber)
+                box(portal,[x,0.16,0],[0.52,0.32,0.56],UIColor(red:0.59,green:0.57,blue:0.49,alpha:1))
+            }
+            // Nine joined wooden segments form the arch without particles or lights.
+            for i in 0..<9 {
+                let angle=(Float(i)+0.5) * .pi/9
+                let beam=ModelEntity(mesh:.generateBox(size:[0.62,0.24,0.36]),materials:[SimpleMaterial(color:timber,roughness:1,isMetallic:false)])
+                beam.position=[cos(angle)*1.55,2.5+sin(angle)*1.55,0]
+                beam.orientation=simd_quatf(angle:angle + .pi/2,axis:[0,0,1])
+                portal.addChild(beam)
+            }
+            box(portal,[0,3.02,0.12],[2.8,0.67,0.19],timber)
+            box(portal,[0,3.02,0.23],[2.63,0.51,0.04],cream)
+            forestSign(portal,L("回忆森林"),[0,2.90,0.27],size:0.37)
+            for side:Float in [-1,1] {
+                let x=side*2.45
+                box(portal,[x,1.15,-0.8],[0.25,2.3,0.25],timber)
+                sphere(portal,[x,2.85,-0.8],[0.85,1.15,0.85],side<0 ? gold:rust)
+                sphere(portal,[x-side*0.3,2.5,-0.45],[0.6,0.65,0.6],gold)
+                // Short rustic fences frame the path, leaving the doorway open.
+                for z:Float in [0.4,1.6] { box(portal,[side*2.15,0.45,z],[0.13,0.9,0.13],timber) }
+                box(portal,[side*2.15,0.65,1],[0.10,0.13,1.4],timber)
+                for i in 0..<4 {
+                    sphere(portal,[side*(1.55+Float(i%2)*0.3),0.10,Float(i)*0.65-0.5],[0.22,0.025,0.12],i%2==0 ? gold:rust)
+                }
+            }
+            box(portal,[0,0.11,1.9],[2.35,0.035,0.65],UIColor(red:0.83,green:0.73,blue:0.54,alpha:1))
+            // The whole landmark remains tappable, including its sign and trees.
+            forestHit(portal,[6.2,4.2,4.7])
+        }
+        func buildForest() {
+            view?.environment.background = .color(UIColor(red:0.89,green:0.83,blue:0.72,alpha:1))
+            sunlight.light.intensity=2200;sunlight.light.color=UIColor(red:1,green:0.94,blue:0.79,alpha:1)
+            sunlight.shadow = .init(maximumDistance:25,depthBias:2)
+            let grass=UIColor(red:0.59,green:0.51,blue:0.36,alpha:1)
+            let sand=UIColor(red:0.85,green:0.75,blue:0.57,alpha:1)
+            let wood=UIColor(red:0.56,green:0.39,blue:0.25,alpha:1)
+            box(root,[0,-0.18,0],[36,0.35,36],grass)
+            ring(root,radius:8,y:0.025,thickness:3,height:0.035,color:sand)
+            box(root,[0,0.03,-10],[2.6,0.04,4],sand)
+            box(root,[0,0.03,11],[3,0.04,6],sand)
+            let lake=ModelEntity(mesh:.generateSphere(radius:1),materials:[SimpleMaterial(color:UIColor(red:0.28,green:0.46,blue:0.46,alpha:1),roughness:0.32,isMetallic:false)])
+            lake.position=[0,0.025,0];lake.scale=[4.5,0.04,5];root.addChild(lake)
+            for radius:Float in [1.5,2.3,3.2] { ring(root,radius:radius,y:0.07,thickness:0.025,height:0.008,color:UIColor(red:0.65,green:0.81,blue:0.73,alpha:1)) }
+            // A single deck across the shallow lake; no particle or reflection pass.
+            box(root,[0,0.10,2],[10.8,0.18,1.8],wood)
+            for x in -5...5 { box(root,[Float(x),0.20,2],[0.025,0.01,1.8],sand) }
+            for z:Float in [1.05,2.95] {
+                box(root,[0,0.85,z],[10.4,0.09,0.09],wood)
+                for x:Float in [-5,-2.5,0,2.5,5] { box(root,[x,0.48,z],[0.09,0.85,0.09],wood) }
+            }
+            for (i,p) in ForestLayout.trees.enumerated() {
+                let tree=Entity();tree.position=p;root.addChild(tree);forestCanopies.append(tree)
+                box(tree,[0,1.15,0],[0.38,2.3,0.38],wood)
+                let autumn:[UIColor] = [.init(red:0.80,green:0.49,blue:0.23,alpha:1), .init(red:0.89,green:0.68,blue:0.28,alpha:1), .init(red:0.64,green:0.38,blue:0.26,alpha:1)]
+                let leaf=autumn[i % autumn.count]
+                sphere(tree,[0,3.25,0],[1.6,1.25,1.35],leaf)
+                sphere(tree,[0.75,2.8,0.25],[1.0,0.85,1.0],leaf)
+            }
+            // Static leaf clusters and shoreline stones replace the meadow's flowers.
+            for i in 0..<36 {
+                let a=Float(i)*2 * .pi/36
+                let r:Float = i % 3 == 0 ? 9.8 : (i % 3 == 1 ? 6.8 : 11)
+                sphere(root,[sin(a)*r,0.065,cos(a)*r],[0.32,0.035,0.17],
+                       i % 2 == 0 ? UIColor(red:0.77,green:0.45,blue:0.19,alpha:1) : UIColor(red:0.93,green:0.70,blue:0.30,alpha:1))
+            }
+            for i in 0..<12 {
+                let a=Float(i)*2 * .pi/12
+                let p=SIMD3<Float>(sin(a)*4.65,0.12,cos(a)*5.15)
+                if abs(p.z-2)>1.1 {
+                    sphere(root,p,[0.38,0.22,0.30],UIColor(red:0.57,green:0.56,blue:0.50,alpha:1))
+                }
+            }
+            let bench=Entity();bench.name="forest-bench";bench.position=ForestLayout.bench;bench.orientation=simd_quatf(angle:-.pi/2,axis:[0,1,0]);root.addChild(bench)
+            box(bench,[0,0.55,0],[2,0.15,0.65],wood)
+            box(bench,[0,1,-0.28],[2,0.7,0.12],wood)
+            for x:Float in [-0.75,0.75] { box(bench,[x,0.25,0],[0.12,0.5,0.5],wood) }
+            forestHit(bench,[2.2,1.5,0.9])
+            let exit=Entity();exit.name="forest-exit";exit.position=[1.8,0,11.5];root.addChild(exit)
+            box(exit,[0,0.65,0],[0.12,1.3,0.12],wood)
+            box(exit,[0,1.35,0],[2.2,0.65,0.12],sand)
+            forestSign(exit,L("返回广场"),[0,1.25,0.09]);forestHit(exit,[2.3,1.8,0.4])
+        }
+        func refreshForestMemories(_ garden:MemorialGarden?) {
+            for child in Array(monuments.children) { child.removeFromParent() }
+            let tree=Entity();tree.name="forest-tree";tree.position=ForestLayout.tree;monuments.addChild(tree)
+            let wood=UIColor(red:0.55,green:0.39,blue:0.26,alpha:1)
+            box(tree,[0,1.2,0],[0.7,2.4,0.7],wood)
+            sphere(tree,[0,3.1,0],[2.4,1.7,2.0],UIColor(red:0.93,green:0.70,blue:0.26,alpha:1))
+            for x:Float in [-1.1,1.1] { sphere(tree,[x,2.8,0.1],[1.1,1.2,1.0],UIColor(red:0.86,green:0.54,blue:0.22,alpha:1)) }
+            ring(tree,radius:1.05,y:0.10,thickness:0.22,height:0.16,color:UIColor(red:0.63,green:0.59,blue:0.49,alpha:1))
+            // Small wooden memory tags hang still beneath the golden canopy.
+            for x:Float in [-1.25,1.25] {
+                box(tree,[x,2.0,0.65],[0.018,0.65,0.018],wood)
+                box(tree,[x,1.6,0.65],[0.25,0.34,0.045],UIColor(red:0.96,green:0.87,blue:0.65,alpha:1))
+            }
+            box(tree,[0,0.65,0.55],[1.6,1.1,0.2],.init(red:0.94,green:0.90,blue:0.78,alpha:1))
+            forestSign(tree,garden.map { L("{0}的纪念树", String($0.name.prefix(12))) } ?? L("回忆在这里生长"),[0,0.85,0.68],size:0.16)
+            forestSign(tree,L("轻触看看我们的故事"),[0,0.52,0.68],size:0.12)
+            forestHit(tree,[3,4,2])
+            for (i,p) in ForestLayout.photos.enumerated() {
+                let frame=Entity();frame.position=p;frame.name="forest-photo-\(i)";monuments.addChild(frame)
+                frame.orientation=simd_quatf(angle:.pi/3,axis:[0,1,0])
+                let photos=garden?.photos ?? []
+                let photo=i<photos.count ? photos[i]:nil
+                box(frame,[0,0.7,0],[0.12,1.4,0.12],wood)
+                box(frame,[0,1.4,0],[1.3,1.5,0.15],wood)
+                let picture=Entity();picture.position=[0,0.1,0.02];picture.scale=[1.7,1.7,1];frame.addChild(picture)
+                plaque(picture,title:photo?.caption.isEmpty == false ? photo!.caption : L("回忆 {0}", i+1),photo:photo)
+                forestHit(frame,[1.5,2.3,0.5])
+            }
+        }
+        func activateForest(_ target:String) {
+            if target == "exit" { controls.forestRequested=false; return }
+            if target == "bench" {
+                controls.resting.toggle();controls.petSitting=controls.resting
+                player.position=controls.resting ? ForestLayout.bench+[0,0.18,0] : [7.3,0,0]
+                player.orientation=simd_quatf(angle:.pi/2,axis:[0,1,0])
+                pet.position=[6,0,1.2];breadcrumbs=[];controls.autoWalk=false;controls.movement = .zero
+                return
+            }
+            controls.forestDetail=target
+        }
+        func stepForest(_ dt:Float) {
+            if let action=controls.forestAction { controls.forestAction=nil;activateForest(action) }
+            if let destination=controls.destination {
+                controls.destination=nil;controls.resting=false;controls.petSitting=false
+                if simd_distance(destination,ForestLayout.entry)<0.1 { forestRoute=0 }
+                if ForestLayout.isWalkable(destination) { player.position=destination;pet.position=destination+[0.6,0,0.4];breadcrumbs=[] }
+            }
+            var movement=SIMD3<Float>(cos(yaw),0,-sin(yaw))*controls.movement.x + SIMD3<Float>(-sin(yaw),0,-cos(yaw)) * -controls.movement.y
+            if simd_length(movement)>0.02 {
+                controls.autoWalk=false
+                if controls.resting { controls.resting=false;controls.petSitting=false;player.position=[7.3,0,0] }
+            }
+            if controls.autoWalk && !controls.resting {
+                let route:[SIMD3<Float>] = [[0,0,9],[6,0,6],[8,0,0],[6,0,-6],[0,0,-8],[-6,0,-6],[-8,0,0],[-6,0,6]]
+                let target=route[forestRoute];let delta=target-player.position
+                if simd_length(delta)<0.4 { forestRoute=(forestRoute+1)%route.count }
+                movement=simd_length(delta)>0.05 ? simd_normalize(delta)*0.55:.zero
+            }
+            if !controls.resting && simd_length(movement)>0.02 {
+                let d=movement*dt*2.6
+                let x=player.position+[d.x,0,0];if walkable(x) { player.position=x }
+                let z=player.position+[0,0,d.z];if walkable(z) { player.position=z }
+                player.orientation=simd_quatf(angle:atan2(-movement.x,-movement.z),axis:[0,1,0]);phase += dt*9
+            }
+            for (i,limb) in limbs.enumerated() {
+                let angle:Float=controls.resting ? (i%2==0 ? .pi/2 : 0) : simd_length(movement)>0.02 ? sin(phase)*0.4*(i==0 || i==3 ? 1:-1):0
+                limb.orientation=simd_quatf(angle:angle,axis:[1,0,0])
+            }
+            updatePet(dt);updateCamera();nearestTick += dt
+            if nearestTick>0.2 {
+                nearestTick=0
+                var near:String?
+                if simd_distance(player.position,ForestLayout.tree)<3.5 { near="tree" }
+                else if simd_distance(player.position,ForestLayout.bench)<3 { near="bench" }
+                else if simd_distance(player.position,ForestLayout.entry)<2.2 { near="exit" }
+                else if let i=ForestLayout.photos.firstIndex(where:{simd_distance(player.position,$0)<2.8}) { near="photo-\(i)" }
+                if controls.forestNearby != near { controls.forestNearby=near }
+                view?.accessibilityValue=String(format:L("森林位置 %.2f, %.2f"),player.position.x,player.position.z)
+            }
+        }
         func box(_ parent:Entity,_ p:SIMD3<Float>,_ size:SIMD3<Float>,_ color:UIColor) {
             let mesh:MeshResource
             if let cached=boxMeshes[size] { mesh=cached } else {
@@ -598,7 +867,7 @@ struct ParkJoystick: View {
                 offset=CGSize(width:x/length,height:y/length)
                 controls.movement=[Float(offset.width/36),Float(offset.height/36)]
             }.onEnded { _ in offset = .zero; controls.movement = .zero })
-            .accessibilityElement(children: .ignore).accessibilityIdentifier("parkJoystick").accessibilityLabel("行走摇杆").accessibilityHint("拖动摇杆在纪念园中行走")
+            .accessibilityElement(children: .ignore).accessibilityIdentifier("parkJoystick").accessibilityLabel(L("行走摇杆")).accessibilityHint(L("拖动摇杆在纪念园中行走"))
             .onDisappear { controls.movement = .zero }
     }
 }
@@ -607,9 +876,9 @@ struct ParkJoystick: View {
 enum TownPlace: String, CaseIterable, Identifiable {
     case plaza, memories, post, meadow
     var id:String { rawValue }
-    var title:String { switch self { case .plaza:"入口广场"; case .memories:"记忆小屋"; case .post:"时光邮局"; case .meadow:"陪伴草地" } }
+    var title:String { switch self { case .plaza:L("入口广场"); case .memories:L("记忆小屋"); case .post:L("时光邮局"); case .meadow:L("陪伴草地") } }
     var icon:String { switch self { case .plaza:"map";case .memories:"photo.on.rectangle.angled";case .post:"envelope";case .meadow:"pawprint" } }
-    var detail:String { switch self { case .plaza:"从这里出发，去看看想念的伙伴";case .memories:"翻开照片，重温一起生活的日子";case .post:"把没说完的话，写进私密信箱";case .meadow:"散步、抚摸、追球，陪它待一会儿" } }
+    var detail:String { switch self { case .plaza:L("从这里出发，去看看想念的伙伴");case .memories:L("翻开照片，重温一起生活的日子");case .post:L("把没说完的话，写进私密信箱");case .meadow:L("散步、抚摸、追球，陪它待一会儿") } }
     var center:SIMD3<Float> { switch self { case .plaza:[0,0,18];case .memories:[-10,0,17];case .post:[-10,0,25];case .meadow:[11,0,18] } }
     var arrival:SIMD3<Float> { switch self { case .plaza:[0,0,24];case .memories:[-10,0,21];case .post:[-10,0,28];case .meadow:[11,0,22] } }
 }

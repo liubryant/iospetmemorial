@@ -1,10 +1,60 @@
 import XCTest
 import UIKit
+import RealityKit
 import simd
 import UserNotifications
 @testable import PetMemorial
 
 final class PetMemorialTests: XCTestCase {
+    func testForestPathsAndLakeBoundary() {
+        XCTAssertTrue(ForestLayout.isWalkable(ForestLayout.entry))
+        for p:SIMD3<Float> in [[0,0,-8.5],[7.3,0,0],[-7,0,-3.5],[0,0,2],[-4,0,2],[4,0,2]] {
+            XCTAssertTrue(ForestLayout.isWalkable(p))
+        }
+        for p:SIMD3<Float> in [[0,0,0],[0,0,-4],[18,0,0],ForestLayout.tree,ForestLayout.bench] {
+            XCTAssertFalse(ForestLayout.isWalkable(p))
+        }
+    }
+    @MainActor func testForestTeardownReleasesSceneAndKeepsOnlyPose() {
+        let controls=ParkControls();controls.forest=true
+        let view=ARView(frame:.zero,cameraMode:.nonAR,automaticallyConfigureSession:false)
+        var scene:MemorialParkScene.Coordinator? = MemorialParkScene.Coordinator(controls)
+        weak var released=scene
+        scene!.attach(view)
+        scene!.player.position=[7.3,0,0];scene!.yaw=0.7;scene!.distance=6
+        scene!.activateForest("bench")
+        XCTAssertTrue(controls.resting)
+        MemorialParkScene.dismantleUIView(view,coordinator:scene!)
+        XCTAssertTrue(view.scene.anchors.isEmpty)
+        XCTAssertNil(scene!.subscription)
+        XCTAssertEqual(controls.forestPose?.position,SIMD3<Float>(7.3,0,0))
+        XCTAssertEqual(controls.forestPose?.yaw,0.7)
+        scene=nil
+        XCTAssertNil(released)
+    }
+
+    @MainActor func testAppearanceSwitchPreservesPlayerAndDoesNotAccumulateGeometry() {
+        let scene = MemorialParkScene.Coordinator(ParkControls())
+        scene.makePlayer()
+        scene.player.position = [2,0,24]
+        let originalCount = scene.player.children.count
+        scene.updateAvatar("female")
+        XCTAssertGreaterThan(scene.player.children.count, originalCount)
+        XCTAssertEqual(scene.player.position, SIMD3<Float>(2,0,24))
+        XCTAssertEqual(scene.limbs.count, 4)
+        scene.updateAvatar("male")
+        XCTAssertEqual(scene.player.children.count, originalCount)
+        scene.updateAvatar("unknown")
+        XCTAssertEqual(scene.avatarStyle, "classic")
+        scene.makePet("cat")
+        let catCount = scene.pet.children.count
+        scene.makePet("dog")
+        XCTAssertNotEqual(scene.pet.children.count, catCount)
+        scene.makePet("cat")
+        XCTAssertEqual(scene.pet.children.count, catCount)
+        XCTAssertEqual(scene.petLegs.count, 4)
+    }
+
     func testTownEntrancesAndExistingPlotsStayWalkable() {
         for place in TownPlace.allCases { XCTAssertTrue(ParkLayout.isWalkable(place.arrival), place.title) }
         XCTAssertFalse(ParkLayout.isWalkable(TownPlace.memories.center))
@@ -125,5 +175,89 @@ final class PetMemorialTests: XCTestCase {
         var garden = MemorialGarden(name: "豆豆", species: "dog", story: "")
         garden.memorialDate = Date().addingTimeInterval(86400 * 10)
         XCTAssertEqual(garden.daysTogetherInMemory, 0)
+    }
+}
+
+@MainActor
+final class AnalyticsConsentTests: XCTestCase {
+    final class Spy: AnalyticsClient {
+        var starts=0
+        var enabled:[Bool]=[]
+        var events:[String]=[]
+        func start() { starts += 1 }
+        func setEnabled(_ value:Bool) { enabled.append(value) }
+        func event(_ name:String) { events.append(name) }
+    }
+    func testConsentGatesSDKAndEventsAndPersistsRevocation() {
+        let name="analytics-test-\(UUID().uuidString)"
+        let defaults=UserDefaults(suiteName:name)!
+        defaults.set(LegalPolicy.version,forKey:LegalPolicy.key)
+        defer { defaults.removePersistentDomain(forName:name) }
+        let spy=Spy(), analytics=AppAnalytics(defaults:defaults,client:Spy(),sdkAllowed:true)
+        XCTAssertNil(analytics.decision)
+        let subject=AppAnalytics(defaults:defaults,client:spy,sdkAllowed:true)
+        subject.startIfConsented();subject.record(.town);subject.decide(false)
+        XCTAssertEqual(spy.starts,0);XCTAssertTrue(spy.events.isEmpty);XCTAssertTrue(spy.enabled.isEmpty)
+        subject.decide(true);subject.startIfConsented();subject.record(.forest)
+        XCTAssertEqual(spy.starts,1);XCTAssertEqual(spy.events,["enter_forest"])
+        subject.decide(false);subject.record(.photos)
+        XCTAssertEqual(spy.enabled,[false]);XCTAssertEqual(spy.events.count,1)
+        let restarted=AppAnalytics(defaults:defaults,client:spy,sdkAllowed:true)
+        restarted.startIfConsented();XCTAssertFalse(restarted.enabled);XCTAssertEqual(spy.starts,1)
+        subject.decide(true);subject.record(.map)
+        XCTAssertEqual(spy.enabled,[false,true]);XCTAssertEqual(spy.starts,1)
+        XCTAssertEqual(spy.events.last,"open_map")
+    }
+    func testPreviouslyConsentedLaunchInitializesOnce() {
+        let name="analytics-test-\(UUID().uuidString)"
+        let defaults=UserDefaults(suiteName:name)!
+        defaults.set(LegalPolicy.version,forKey:LegalPolicy.key)
+        defer { defaults.removePersistentDomain(forName:name) }
+        defaults.set(true,forKey:AppAnalytics.consentKey)
+        let spy=Spy(), subject=AppAnalytics(defaults:defaults,client:Spy(),sdkAllowed:false)
+        subject.startIfConsented();XCTAssertFalse(subject.started)
+        let active=AppAnalytics(defaults:defaults,client:spy,sdkAllowed:true)
+        active.startIfConsented();active.startIfConsented();XCTAssertEqual(spy.starts,1)
+    }
+}
+
+extension AnalyticsConsentTests {
+    func testAnalyticsCannotStartBeforeGeneralAgreement() {
+        let name="analytics-test-\(UUID().uuidString)"
+        let defaults=UserDefaults(suiteName:name)!
+        defer { defaults.removePersistentDomain(forName:name) }
+        defaults.set(true,forKey:AppAnalytics.consentKey)
+        let spy=Spy(),subject=AppAnalytics(defaults:defaults,client:Spy(),sdkAllowed:true)
+        subject.startIfConsented();XCTAssertFalse(subject.started)
+        let guarded=AppAnalytics(defaults:defaults,client:spy,sdkAllowed:true)
+        guarded.record(.town);guarded.decide(true)
+        XCTAssertEqual(spy.starts,0);XCTAssertTrue(spy.events.isEmpty)
+        defaults.set(LegalPolicy.version,forKey:LegalPolicy.key)
+        guarded.record(.town)
+        XCTAssertEqual(spy.starts,1);XCTAssertEqual(spy.events,["enter_town"])
+    }
+}
+
+final class LocalizationTests: XCTestCase {
+    func testArgumentsCanReorderWithoutChangingUserContent() {
+        XCTAssertEqual(AppLocalization.format("{1} — {0} — {1}",arguments:["Milo {1}","猫🐾"]),"猫🐾 — Milo {1} — 猫🐾")
+        XCTAssertEqual(AppLocalization.format("{0}: {1}",arguments:["%02d / 🐈",12]),"%02d / 🐈: 12")
+    }
+    func testArabicAndFullWidthDigitsBecomeAPICompatible() {
+        XCTAssertEqual(AppLocalization.asciiDigits("١٣٨٠٠٠٠٠٠٠٠"),"13800000000")
+        XCTAssertEqual(AppLocalization.asciiDigits("۱۲۳۴۵۶"),"123456")
+        XCTAssertEqual(AppLocalization.asciiDigits("１２３ 456abc"),"123456")
+    }
+    func testEveryLanguageIsPackagedAndResolvesCriticalCopy() throws {
+        let bundle=Bundle(for:GardenPreviewCapture.self)
+        for language in AppLocalization.supportedLanguages {
+            let path=try XCTUnwrap(bundle.path(forResource:language,ofType:"lproj"),language)
+            let localized=try XCTUnwrap(Bundle(path:path))
+            for key in ["花园","同意并进入","回忆森林","验证码错误或已过期"] {
+                let value=localized.localizedString(forKey:key,value:"MISSING",table:nil)
+                XCTAssertNotEqual(value,"MISSING",language+" "+key)
+                if ["en","de","fr","es","ar","ko"].contains(language) { XCTAssertNotEqual(value,key,language+" "+key) }
+            }
+        }
     }
 }

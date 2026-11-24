@@ -19,3 +19,6 @@ xcuserdata/
 *.ipa
 *.xcarchive/
 *.dSYM/
+
+# CocoaPods dependencies are restored with pod install
+Pods/

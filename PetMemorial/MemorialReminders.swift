@@ -30,13 +30,13 @@ import UserNotifications
         for (kind,date) in [("birthday",garden.birthday),("memorial",garden.memorialDate)] {
             guard let date,version==generation else { continue }
             let content=UNMutableNotificationContent()
-            content.title="今天，留一点时间给想念"
-            content.body=kind=="birthday" ? "今天是\(garden.name)的生日，去花园陪它一会儿吧。":"今天是纪念\(garden.name)的日子，一束花、一封信，都是陪伴。"
+            content.title=L("今天，留一点时间给想念")
+            content.body=kind=="birthday" ? L("今天是{0}的生日，去花园陪它一会儿吧。", garden.name):L("今天是纪念{0}的日子，一束花、一封信，都是陪伴。", garden.name)
             content.sound = .default
             let request=UNNotificationRequest(identifier:"petmemorial.\(kind)",content:content,trigger:UNCalendarNotificationTrigger(dateMatching:components(date),repeats:true))
             do { try await center.add(request) }
             catch {
-                if version==generation { center.removePendingNotificationRequests(withIdentifiers:["petmemorial.birthday","petmemorial.memorial"]);return "提醒未能保存，请稍后重试。" }
+                if version==generation { center.removePendingNotificationRequests(withIdentifiers:["petmemorial.birthday","petmemorial.memorial"]);return L("提醒未能保存，请稍后重试。") }
             }
         }
         if version != generation { return await sync(latestGarden,account:latestAccount) }
@@ -58,25 +58,25 @@ struct MemorialDatesView:View {
             ScrollView {
                 VStack(alignment:.leading,spacing:22) {
                     Image(systemName:"sun.max").font(.system(size:42,weight:.light)).foregroundStyle(Color(red:0.73,green:0.56,blue:0.28)).padding(22).background(.white,in:Circle()).frame(maxWidth:.infinity)
-                    Text("值得记住的日子").font(.system(size:28,weight:.medium,design:.serif)).frame(maxWidth:.infinity)
-                    Text("日子向前，爱留在心里。\n在特别的一天，给想念留一点时间。").font(.subheadline).lineSpacing(5).multilineTextAlignment(.center).foregroundStyle(Palette.muted).frame(maxWidth:.infinity)
+                    Text(L("值得记住的日子")).font(.system(size:28,weight:.medium,design:.serif)).frame(maxWidth:.infinity)
+                    Text(L("日子向前，爱留在心里。\n在特别的一天，给想念留一点时间。")).font(.subheadline).lineSpacing(5).multilineTextAlignment(.center).foregroundStyle(Palette.muted).frame(maxWidth:.infinity)
                     if let garden=store.garden {
-                        if let date=garden.birthday { dateCard("它的生日",symbol:"gift",date:date) }
-                        if let date=garden.memorialDate { dateCard("我们的纪念日",symbol:"leaf",date:date) }
-                        if garden.birthday==nil && garden.memorialDate==nil { EmptyMemoryView(symbol:"calendar",title:"为想念留一个日期",detail:"添加生日或告别日期，\n让特别的日子被温柔记住。") }
-                        Button { edit=true } label:{ Label("编辑纪念日期",systemImage:"calendar.badge.plus") }.buttonStyle(PillButton(filled:false))
+                        if let date=garden.birthday { dateCard(L("它的生日"),symbol:"gift",date:date) }
+                        if let date=garden.memorialDate { dateCard(L("我们的纪念日"),symbol:"leaf",date:date) }
+                        if garden.birthday==nil && garden.memorialDate==nil { EmptyMemoryView(symbol:"calendar",title:L("为想念留一个日期"),detail:L("添加生日或告别日期，\n让特别的日子被温柔记住。")) }
+                        Button { edit=true } label:{ Label(L("编辑纪念日期"),systemImage:"calendar.badge.plus") }.buttonStyle(PillButton(filled:false))
                         VStack(alignment:.leading,spacing:12) {
-                            Toggle(isOn:Binding(get:{enabled},set:{value in Task { await change(value,garden:garden) }})) { Label("纪念日提醒",systemImage:"bell.badge") }.disabled(working || (garden.birthday==nil && garden.memorialDate==nil))
-                            Text("每年当天上午 9:00，按手机当地时间提醒。只在本机设置，默认关闭；退出账号后会停止该账号的提醒。").font(.caption).lineSpacing(4).foregroundStyle(Palette.muted)
-                            Text("2 月 29 日按每年 2 月 28 日提醒。").font(.caption2).foregroundStyle(Palette.muted)
-                            if denied { Button("到系统设置开启通知") { if let url=URL(string:UIApplication.openSettingsURLString) { UIApplication.shared.open(url) } } }
+                            Toggle(isOn:Binding(get:{enabled},set:{value in Task { await change(value,garden:garden) }})) { Label(L("纪念日提醒"),systemImage:"bell.badge") }.disabled(working || (garden.birthday==nil && garden.memorialDate==nil))
+                            Text(L("每年当天上午 9:00，按手机当地时间提醒。只在本机设置，默认关闭；退出账号后会停止该账号的提醒。")).font(.caption).lineSpacing(4).foregroundStyle(Palette.muted)
+                            Text(L("2 月 29 日按每年 2 月 28 日提醒。")).font(.caption2).foregroundStyle(Palette.muted)
+                            if denied { Button(L("到系统设置开启通知")) { if let url=URL(string:UIApplication.openSettingsURLString) { UIApplication.shared.open(url) } } }
                             if working { ProgressView() }
                             if let error { Text(error).font(.footnote).foregroundStyle(.red) }
                         }.padding(20).background(.white,in:RoundedRectangle(cornerRadius:22))
                     }
                 }.padding(24)
-            }.background(Palette.cream).foregroundStyle(Palette.ink).navigationTitle("纪念日").navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("完成") { dismiss() } }
+            }.background(Palette.cream).foregroundStyle(Palette.ink).navigationTitle(L("纪念日")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { Button(L("完成")) { dismiss() } }
                 .sheet(isPresented:$edit) { GardenEditor(garden:store.garden) }
                 .task { if let garden=store.garden { enabled=MemorialReminders.enabled(garden,account:account) };denied=await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied }
         }.tint(Palette.green)
@@ -88,13 +88,13 @@ struct MemorialDatesView:View {
         return HStack(spacing:16) {
             Image(systemName:symbol).font(.title2).foregroundStyle(Palette.green).frame(width:52,height:52).background(Palette.cream,in:Circle())
             VStack(alignment:.leading,spacing:6) { Text(title).font(.headline);Text(date,format:.dateTime.month().day()).font(.subheadline).foregroundStyle(Palette.muted) }
-            Spacer();VStack(spacing:4) { Text(days==0 ? "今天":"\(days)").font(.system(size:27,weight:.medium,design:.serif));if days>0 { Text("天后").font(.caption).foregroundStyle(Palette.muted) } }
+            Spacer();VStack(spacing:4) { Text(days==0 ? L("今天"):"\(days)").font(.system(size:27,weight:.medium,design:.serif));if days>0 { Text(L("天后")).font(.caption).foregroundStyle(Palette.muted) } }
         }.padding(20).background(.white,in:RoundedRectangle(cornerRadius:22))
     }
     private func change(_ value:Bool,garden:MemorialGarden) async {
         working=true;defer { working=false };error=nil
         if value {
-            do { guard try await UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.sound,.badge]) else { denied=true;error="通知尚未允许，可以在系统设置中开启。";return } }
+            do { guard try await UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.sound,.badge]) else { denied=true;error=L("通知尚未允许，可以在系统设置中开启。");return } }
             catch { self.error=error.localizedDescription;return }
         }
         enabled=value;denied=false;UserDefaults.standard.set(value,forKey:MemorialReminders.preferenceKey(garden,account:account))

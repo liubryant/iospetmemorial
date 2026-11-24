@@ -35,11 +35,11 @@ final class AccountTests:XCTestCase {
     }
     func testMissingTokenCannotCreateFakeLoggedInState() async {
         do { _=try await api(response:"{\"code\":0,\"data\":{}}").login(phone:"13800000000",credential:"123456",passwordMode:false);XCTFail("must reject missing token") }
-        catch { XCTAssertTrue(error.localizedDescription.contains("凭证")) }
+        catch { XCTAssertEqual(error.localizedDescription,L("登录接口未返回有效凭证，无法关联纪念园。请稍后重试")) }
     }
     func testWrongPasswordResponseIsShown() async {
         do { _=try await api(response:"{\"code\":400,\"msg\":\"密码错误\"}").login(phone:"13800000000",credential:"wrong",passwordMode:true);XCTFail("must reject") }
-        catch { XCTAssertEqual(error.localizedDescription,"密码错误") }
+        catch { XCTAssertEqual(error.localizedDescription,L("账号或密码不正确")) }
     }
     func testPhoneValidation() {
         XCTAssertTrue(AccountAPI.validPhone("13800000000"));XCTAssertFalse(AccountAPI.validPhone("123"));XCTAssertFalse(AccountAPI.validPhone("abcdefghijk"))

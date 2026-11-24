@@ -7,25 +7,37 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FEA000000000000000000012 = {isa = PBXBuildFile; fileRef = FEA000000000000000000011; };
-		FEA000000000000000000002 = {isa = PBXBuildFile; fileRef = FEA000000000000000000001; };
 		124884A02C41D5D4E9F0ECCD /* ParkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D0B1E08B05ACC4A0CA355E /* ParkStore.swift */; };
 		14E5285FD8500DD4F68D6E1D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 622D5821497FA99430CFFEA7 /* SettingsView.swift */; };
 		25C94AF1DDF53A4E1268ACA2 /* PetMemorialApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51777FFFC5A3C7050B43438F /* PetMemorialApp.swift */; };
 		2F886AFF057F07A12D253FAA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1413E4F1611B68796B934DB4 /* Foundation.framework */; };
 		3694D75B81697A998048A1AC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1413E4F1611B68796B934DB4 /* Foundation.framework */; };
+		392D74A088C45DB785F186E0 /* AppAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED882801FA36D49D92D17F3F /* AppAnalytics.swift */; };
 		3BD810EEC0ABD134D99E2BBD /* PetMemorialTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185F3783A64CF76746B2EB0C /* PetMemorialTests.swift */; };
 		3D78A6E680A7A65516CA76FE /* MemoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA7E65134FF82DAAB5F3500D /* MemoryViews.swift */; };
+		405A009B14020397930CC369 /* LegalConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60D87F54D8FDA901B28B2D4 /* LegalConsent.swift */; };
+		459962A3ACC9E6BF51613555 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E164E5031BBB443B5F56E9C5 /* Localizable.xcstrings */; };
+		5866FFEE5554B6948B704381 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA97AE2B041FDD264194BC2 /* Localization.swift */; };
+		6648E581054C6B29FC6BE9E4 /* UMDevicePrivacy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 9C3455225FE8E35E728CB04E /* UMDevicePrivacy.bundle */; };
 		7F415F63E306B505A9D5528F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1413E4F1611B68796B934DB4 /* Foundation.framework */; };
 		85D6DDDBCB9D308BE144F017 /* AccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE648A12AF37BCA87FCDB7D /* AccountTests.swift */; };
 		885D080F59C96A9AAAE074EE /* GardenSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3729DE2E747EEF5C43A68F6B /* GardenSceneView.swift */; };
+		9232B9BE29E355A6ED03E27A /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = BEC04AFBD292F1D74358DA44 /* InfoPlist.xcstrings */; };
 		9E84C61332A8FD5B7E9AA7F0 /* GardenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291E9E58484288BA5E6F3C1B /* GardenStore.swift */; };
 		9FFD0DB5F4A8CC7A55F88408 /* BackupClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1121275F3111E2AA63055830 /* BackupClient.swift */; };
 		A053A069D0522A8B0229A083 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03638C9B5FBCE20CCCB6C13E /* Models.swift */; };
 		A31D21958D964599A9CE898F /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8760F923C5FC8535539E4ED3 /* Account.swift */; };
+		B274518E723E59E949947BAF /* Legal in Resources */ = {isa = PBXBuildFile; fileRef = 98E9CF0220DDF445489550F1 /* Legal */; };
+		B856383572E0C182E9BF8A74 /* Pods_PetMemorial.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D14E5D882BC4C8D57971410 /* Pods_PetMemorial.framework */; };
 		BFA828470D17A4FD7F4A666C /* PetMemorialUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67BC2F5C9DA73E281B4C939 /* PetMemorialUITests.swift */; };
+		C8F26B9EDE1F79BBE059D0D9 /* UMCommonPrivacy.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5439FD3BCFC811B4985BB901 /* UMCommonPrivacy.bundle */; };
 		CCB668B51DEF546F02CF39BD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D016D6215014143356B88CA0 /* Assets.xcassets */; };
 		CDBC64DFF8628EBBE26DB4F4 /* MemorialPark.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0AA47E0F1025B24F55A6E14 /* MemorialPark.swift */; };
+		D98C32A93F9B421769F72508 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8A27BA37A8293823A3BC3ABB /* PrivacyInfo.xcprivacy */; };
+		F0000E251D9891927C070E85 /* Pods_PetMemorialUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6CD0A4DE35973CD7F3D252E7 /* Pods_PetMemorialUITests.framework */; };
+		F858D08EC61FF4C57317045E /* Pods_PetMemorialTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FE5D5128398E3237E98F9CF /* Pods_PetMemorialTests.framework */; };
+		FEA000000000000000000002 /* CommunityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA000000000000000000001 /* CommunityViews.swift */; };
+		FEA000000000000000000012 /* MemorialReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA000000000000000000011 /* MemorialReminders.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,26 +58,44 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		FEA000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorialReminders.swift; sourceTree = "<group>"; };
-		FEA000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityViews.swift; sourceTree = "<group>"; };
 		03638C9B5FBCE20CCCB6C13E /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		0C5B0BDACAB090A846F51C12 /* PetMemorialTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PetMemorialTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1121275F3111E2AA63055830 /* BackupClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BackupClient.swift; sourceTree = "<group>"; };
+		134A60F6E7A99EA8D2CA2D3C /* Pods-PetMemorialUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorialUITests.debug.xcconfig"; path = "Target Support Files/Pods-PetMemorialUITests/Pods-PetMemorialUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		1413E4F1611B68796B934DB4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		185F3783A64CF76746B2EB0C /* PetMemorialTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PetMemorialTests.swift; sourceTree = "<group>"; };
+		1D14E5D882BC4C8D57971410 /* Pods_PetMemorial.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PetMemorial.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		291E9E58484288BA5E6F3C1B /* GardenStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GardenStore.swift; sourceTree = "<group>"; };
 		3729DE2E747EEF5C43A68F6B /* GardenSceneView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GardenSceneView.swift; sourceTree = "<group>"; };
+		4A0B9F3DCF5BD0B40F4A2367 /* Pods-PetMemorialTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorialTests.release.xcconfig"; path = "Target Support Files/Pods-PetMemorialTests/Pods-PetMemorialTests.release.xcconfig"; sourceTree = "<group>"; };
 		51777FFFC5A3C7050B43438F /* PetMemorialApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PetMemorialApp.swift; sourceTree = "<group>"; };
+		5439FD3BCFC811B4985BB901 /* UMCommonPrivacy.bundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.plug-in"; name = UMCommonPrivacy.bundle; path = Resources/UMCommonPrivacy.bundle; sourceTree = "<group>"; };
+		5FE5D5128398E3237E98F9CF /* Pods_PetMemorialTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PetMemorialTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		622D5821497FA99430CFFEA7 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		670FA29DD6EE84A490816635 /* PetMemorial.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetMemorial.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6CD0A4DE35973CD7F3D252E7 /* Pods_PetMemorialUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PetMemorialUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		7AA97AE2B041FDD264194BC2 /* Localization.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		81494A8C1D4F53618A9BCC5F /* Pods-PetMemorial.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorial.debug.xcconfig"; path = "Target Support Files/Pods-PetMemorial/Pods-PetMemorial.debug.xcconfig"; sourceTree = "<group>"; };
 		8760F923C5FC8535539E4ED3 /* Account.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
+		8A27BA37A8293823A3BC3ABB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8BC70E182115F60DFA6FE1D3 /* Pods-PetMemorial.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorial.release.xcconfig"; path = "Target Support Files/Pods-PetMemorial/Pods-PetMemorial.release.xcconfig"; sourceTree = "<group>"; };
+		8E4BCB61E06EA71597145304 /* Pods-PetMemorialUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorialUITests.release.xcconfig"; path = "Target Support Files/Pods-PetMemorialUITests/Pods-PetMemorialUITests.release.xcconfig"; sourceTree = "<group>"; };
+		98E9CF0220DDF445489550F1 /* Legal */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = Legal; path = Resources/Legal; sourceTree = "<group>"; };
+		9C3455225FE8E35E728CB04E /* UMDevicePrivacy.bundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.plug-in"; name = UMDevicePrivacy.bundle; path = Resources/UMDevicePrivacy.bundle; sourceTree = "<group>"; };
 		A688EFAD3805E50927B34E85 /* PetMemorialUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PetMemorialUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D0B1E08B05ACC4A0CA355E /* ParkStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParkStore.swift; sourceTree = "<group>"; };
 		AA7E65134FF82DAAB5F3500D /* MemoryViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryViews.swift; sourceTree = "<group>"; };
+		AD7992F541A74743C647BF7E /* Pods-PetMemorialTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetMemorialTests.debug.xcconfig"; path = "Target Support Files/Pods-PetMemorialTests/Pods-PetMemorialTests.debug.xcconfig"; sourceTree = "<group>"; };
 		BAE648A12AF37BCA87FCDB7D /* AccountTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccountTests.swift; sourceTree = "<group>"; };
+		BEC04AFBD292F1D74358DA44 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		C60D87F54D8FDA901B28B2D4 /* LegalConsent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LegalConsent.swift; sourceTree = "<group>"; };
 		C67BC2F5C9DA73E281B4C939 /* PetMemorialUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PetMemorialUITests.swift; sourceTree = "<group>"; };
 		D016D6215014143356B88CA0 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D0AA47E0F1025B24F55A6E14 /* MemorialPark.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemorialPark.swift; sourceTree = "<group>"; };
+		E164E5031BBB443B5F56E9C5 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		ED882801FA36D49D92D17F3F /* AppAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppAnalytics.swift; sourceTree = "<group>"; };
+		FEA000000000000000000001 /* CommunityViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityViews.swift; sourceTree = "<group>"; };
+		FEA000000000000000000011 /* MemorialReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemorialReminders.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +104,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7F415F63E306B505A9D5528F /* Foundation.framework in Frameworks */,
+				B856383572E0C182E9BF8A74 /* Pods_PetMemorial.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,6 +113,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2F886AFF057F07A12D253FAA /* Foundation.framework in Frameworks */,
+				F858D08EC61FF4C57317045E /* Pods_PetMemorialTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,12 +122,24 @@
 			buildActionMask = 2147483647;
 			files = (
 				3694D75B81697A998048A1AC /* Foundation.framework in Frameworks */,
+				F0000E251D9891927C070E85 /* Pods_PetMemorialUITests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0B2A765757FFE1508A0E4E71 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				7AA97AE2B041FDD264194BC2 /* Localization.swift */,
+				E164E5031BBB443B5F56E9C5 /* Localizable.xcstrings */,
+				BEC04AFBD292F1D74358DA44 /* InfoPlist.xcstrings */,
+			);
+			name = Localization;
+			path = Localization;
+			sourceTree = "<group>";
+		};
 		7FCC96D697EE31EF25816332 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -141,6 +185,7 @@
 				C606BCEF434EB4B496D3B0D9 /* PetMemorial */,
 				94C8A91A4A698C5EC95B3345 /* PetMemorialTests */,
 				B23897C188B50AA9828FC78C /* PetMemorialUITests */,
+				DAFBE4515D4EC57EAB8D5A3F /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -148,6 +193,9 @@
 			isa = PBXGroup;
 			children = (
 				7FCC96D697EE31EF25816332 /* iOS */,
+				1D14E5D882BC4C8D57971410 /* Pods_PetMemorial.framework */,
+				5FE5D5128398E3237E98F9CF /* Pods_PetMemorialTests.framework */,
+				6CD0A4DE35973CD7F3D252E7 /* Pods_PetMemorialUITests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -166,11 +214,32 @@
 				D0AA47E0F1025B24F55A6E14 /* MemorialPark.swift */,
 				A9D0B1E08B05ACC4A0CA355E /* ParkStore.swift */,
 				8760F923C5FC8535539E4ED3 /* Account.swift */,
-                FEA000000000000000000011,
-                FEA000000000000000000001,
+				FEA000000000000000000011 /* MemorialReminders.swift */,
+				FEA000000000000000000001 /* CommunityViews.swift */,
+				ED882801FA36D49D92D17F3F /* AppAnalytics.swift */,
+				8A27BA37A8293823A3BC3ABB /* PrivacyInfo.xcprivacy */,
+				5439FD3BCFC811B4985BB901 /* UMCommonPrivacy.bundle */,
+				9C3455225FE8E35E728CB04E /* UMDevicePrivacy.bundle */,
+				C60D87F54D8FDA901B28B2D4 /* LegalConsent.swift */,
+				98E9CF0220DDF445489550F1 /* Legal */,
+				0B2A765757FFE1508A0E4E71 /* Localization */,
 			);
 			name = PetMemorial;
 			path = PetMemorial;
+			sourceTree = "<group>";
+		};
+		DAFBE4515D4EC57EAB8D5A3F /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				8BC70E182115F60DFA6FE1D3 /* Pods-PetMemorial.release.xcconfig */,
+				81494A8C1D4F53618A9BCC5F /* Pods-PetMemorial.debug.xcconfig */,
+				4A0B9F3DCF5BD0B40F4A2367 /* Pods-PetMemorialTests.release.xcconfig */,
+				AD7992F541A74743C647BF7E /* Pods-PetMemorialTests.debug.xcconfig */,
+				8E4BCB61E06EA71597145304 /* Pods-PetMemorialUITests.release.xcconfig */,
+				134A60F6E7A99EA8D2CA2D3C /* Pods-PetMemorialUITests.debug.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -180,6 +249,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A22BC83D09FAB945E3730F5A /* Build configuration list for PBXNativeTarget "PetMemorial" */;
 			buildPhases = (
+				0E2CCB825ECDDBD00E9949B5 /* [CP] Check Pods Manifest.lock */,
 				7E95C554EF05DB80D3967559 /* Sources */,
 				4D0D933EA0834B71D273EC36 /* Frameworks */,
 				DDBBB267472FD50089DFF4FC /* Resources */,
@@ -197,6 +267,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AC8C1584D772600087ECC270 /* Build configuration list for PBXNativeTarget "PetMemorialUITests" */;
 			buildPhases = (
+				1A2B0098B997B0038A07BBF6 /* [CP] Check Pods Manifest.lock */,
 				1030DD6AC18113F2E8F08DFC /* Sources */,
 				CD9A26DFED0D9B987E7C46D6 /* Frameworks */,
 				0AE30E11D30A6D4710F8C3AA /* Resources */,
@@ -215,6 +286,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F7DD8E4EDD1AABDE36C9EF1C /* Build configuration list for PBXNativeTarget "PetMemorialTests" */;
 			buildPhases = (
+				C0F16CCD908BE7E3C288ACFF /* [CP] Check Pods Manifest.lock */,
 				A7102EF1A6A1931227DB3A0C /* Sources */,
 				5E8A5E9EA52F113D18F97198 /* Frameworks */,
 				422E63FE55E92187173FB3F4 /* Resources */,
@@ -245,6 +317,14 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
+				ja,
+				de,
+				fr,
+				es,
+				"zh-Hant-HK",
+				ko,
+				ar,
 			);
 			mainGroup = BA08C072B1497A0632154ABF;
 			minimizedProjectReferenceProxies = 0;
@@ -280,10 +360,85 @@
 			buildActionMask = 2147483647;
 			files = (
 				CCB668B51DEF546F02CF39BD /* Assets.xcassets in Resources */,
+				D98C32A93F9B421769F72508 /* PrivacyInfo.xcprivacy in Resources */,
+				C8F26B9EDE1F79BBE059D0D9 /* UMCommonPrivacy.bundle in Resources */,
+				6648E581054C6B29FC6BE9E4 /* UMDevicePrivacy.bundle in Resources */,
+				B274518E723E59E949947BAF /* Legal in Resources */,
+				459962A3ACC9E6BF51613555 /* Localizable.xcstrings in Resources */,
+				9232B9BE29E355A6ED03E27A /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0E2CCB825ECDDBD00E9949B5 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-PetMemorial-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		1A2B0098B997B0038A07BBF6 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-PetMemorialUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C0F16CCD908BE7E3C288ACFF /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-PetMemorialTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1030DD6AC18113F2E8F08DFC /* Sources */ = {
@@ -308,8 +463,11 @@
 				CDBC64DFF8628EBBE26DB4F4 /* MemorialPark.swift in Sources */,
 				124884A02C41D5D4E9F0ECCD /* ParkStore.swift in Sources */,
 				A31D21958D964599A9CE898F /* Account.swift in Sources */,
-                FEA000000000000000000012,
-                FEA000000000000000000002,
+				FEA000000000000000000012 /* MemorialReminders.swift in Sources */,
+				FEA000000000000000000002 /* CommunityViews.swift in Sources */,
+				392D74A088C45DB785F186E0 /* AppAnalytics.swift in Sources */,
+				405A009B14020397930CC369 /* LegalConsent.swift in Sources */,
+				5866FFEE5554B6948B704381 /* Localization.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +500,7 @@
 /* Begin XCBuildConfiguration section */
 		15D127EA4F603589A3B5FDFB /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AD7992F541A74743C647BF7E /* Pods-PetMemorialTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -357,6 +516,7 @@
 		};
 		18AD03F1C3157C9920352CD7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 134A60F6E7A99EA8D2CA2D3C /* Pods-PetMemorialUITests.debug.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				DEVELOPMENT_TEAM = MF7G4UB9D9;
@@ -425,6 +585,7 @@
 		};
 		779B13CF3292E04B15CBE288 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8BC70E182115F60DFA6FE1D3 /* Pods-PetMemorial.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -434,7 +595,7 @@
 				DEVELOPMENT_TEAM = MF7G4UB9D9;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "爪印花园";
+				INFOPLIST_KEY_CFBundleDisplayName = "宠物纪念馆";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -514,6 +675,7 @@
 		};
 		A71F4782F365B487040B044F /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4A0B9F3DCF5BD0B40F4A2367 /* Pods-PetMemorialTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -530,6 +692,7 @@
 		};
 		C1264DECF665935E1B590936 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 81494A8C1D4F53618A9BCC5F /* Pods-PetMemorial.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -539,7 +702,7 @@
 				DEVELOPMENT_TEAM = MF7G4UB9D9;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "爪印花园";
+				INFOPLIST_KEY_CFBundleDisplayName = "宠物纪念馆";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -557,6 +720,7 @@
 		};
 		E61F1F352FB23785D25E0DD6 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8E4BCB61E06EA71597145304 /* Pods-PetMemorialUITests.release.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				DEVELOPMENT_TEAM = MF7G4UB9D9;

@@ -15,9 +15,9 @@ enum BackupKey {
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecSuccess, let data = result as? Data, let key = String(data: data, encoding: .utf8) { return key }
-        guard status == errSecItemNotFound else { throw MemorialError(message: "无法读取备份钥匙，请解锁设备后重试。") }
+        guard status == errSecItemNotFound else { throw MemorialError(message: L("无法读取备份钥匙，请解锁设备后重试。")) }
         var bytes = [UInt8](repeating: 0, count: 32)
-        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw MemorialError(message: "无法创建安全备份钥匙。") }
+        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw MemorialError(message: L("无法创建安全备份钥匙。")) }
         let key = bytes.map { String(format: "%02x", $0) }.joined()
         try write(key)
         return key
@@ -30,8 +30,8 @@ enum BackupKey {
             var insert = query
             insert[kSecValueData as String] = data
             insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-            guard SecItemAdd(insert as CFDictionary, nil) == errSecSuccess else { throw MemorialError(message: "无法保存备份钥匙。") }
-        } else if status != errSecSuccess { throw MemorialError(message: "无法保存备份钥匙。") }
+            guard SecItemAdd(insert as CFDictionary, nil) == errSecSuccess else { throw MemorialError(message: L("无法保存备份钥匙。")) }
+        } else if status != errSecSuccess { throw MemorialError(message: L("无法保存备份钥匙。")) }
     }
 }
 struct BackupClient {
@@ -45,16 +45,16 @@ struct BackupClient {
         request.httpBody = body
         if let token = try accountToken ?? AccountVault.read()?.token { request.setValue(token, forHTTPHeaderField: "X-App-Token") }
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw MemorialError(message: "服务器未响应，请稍后重试。") }
+        guard let http = response as? HTTPURLResponse else { throw MemorialError(message: L("服务器未响应，请稍后重试。")) }
         guard (200...299).contains(http.statusCode) else {
             let message = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["message"] as? String
-            throw MemorialError(message: message ?? "备份失败（\(http.statusCode)），本机资料仍然保留。", status: http.statusCode)
+            throw MemorialError(message: AppLocalization.serverMessage(message, fallback:L("备份失败（{0}），本机资料仍然保留。", http.statusCode)), status: http.statusCode)
         }
         return data
     }
     func save(_ envelope: BackupEnvelope, key: String) async throws -> Int {
         let body = try MemorialCoding.encoder.encode(envelope)
-        guard body.count <= 1_600_000 else { throw MemorialError(message: "备份太大，请减少照片后重试。") }
+        guard body.count <= 1_600_000 else { throw MemorialError(message: L("备份太大，请减少照片后重试。")) }
         let data = try await request(method: "PUT", key: key, body: body)
         struct Version: Decodable { let version: Int }
         return try JSONDecoder().decode(Version.self, from: data).version

@@ -20,10 +20,10 @@ struct ParkClient {
         request.setValue("application/json",forHTTPHeaderField:"Content-Type")
         if let token = try accountToken ?? AccountVault.read()?.token { request.setValue(token,forHTTPHeaderField:"X-App-Token") }
         let (data,response) = try await URLSession.shared.data(for:request)
-        guard let http=response as? HTTPURLResponse else { throw MemorialError(message:"纪念园连接失败") }
+        guard let http=response as? HTTPURLResponse else { throw MemorialError(message:L("纪念园连接失败")) }
         guard (200...299).contains(http.statusCode) else {
             let message=(try? JSONSerialization.jsonObject(with:data) as? [String:Any])?["message"] as? String
-            throw MemorialError(message:message ?? "纪念园暂不可用（\(http.statusCode)）")
+            throw MemorialError(message:AppLocalization.serverMessage(message, fallback:L("纪念园暂不可用（{0}）", http.statusCode)))
         }
         return data
     }
@@ -37,7 +37,7 @@ struct ParkClient {
             for quality in [0.7,0.5,0.3,0.1] {
                 if let data=thumbnail.jpegData(compressionQuality:quality), data.count<=45000 { photo=data.base64EncodedString(); break }
             }
-            guard !photo.isEmpty else { throw MemorialError(message:"公开照片过大，请换一张图片") }
+            guard !photo.isEmpty else { throw MemorialError(message:L("公开照片过大，请换一张图片")) }
         }
         return try JSONSerialization.data(withJSONObject:["index":index,"name":garden.name,"story":garden.story,"photo":photo])
     }

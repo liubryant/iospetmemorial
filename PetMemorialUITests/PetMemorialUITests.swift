@@ -1,7 +1,117 @@
 import XCTest
 final class PetMemorialUITests: XCTestCase {
+    func testFirstLaunchLegalConsentAndOfflinePreview() {
+        let app=XCUIApplication()
+        app.launchArguments=["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsUnreviewed", "-testLegalUnreviewed"]
+        app.launch()
+        XCTAssertTrue(app.buttons["《隐私政策》"].waitForExistence(timeout:8))
+        let welcome=XCTAttachment(screenshot:app.screenshot());welcome.name="First-launch-consent";welcome.lifetime = .keepAlways;add(welcome)
+        app.buttons["《隐私政策》"].tap()
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout:5))
+        let shot=XCTAttachment(screenshot:app.screenshot());shot.name="Privacy-document";shot.lifetime = .keepAlways;add(shot)
+        app.buttons["完成"].tap()
+        app.buttons["暂不同意，基础浏览"].tap()
+        XCTAssertTrue(app.buttons["重新阅读协议"].waitForExistence(timeout:5))
+        XCTAssertFalse(app.tabBars.buttons["我的"].exists)
+        app.buttons["重新阅读协议"].tap()
+        app.buttons["同意并进入"].tap()
+        XCTAssertTrue(app.tabBars.buttons["我的"].waitForExistence(timeout:8))
+        XCTAssertFalse(app.buttons["同意开启统计"].exists)
+        app.terminate();app.launchArguments=["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK"];app.launch()
+        XCTAssertTrue(app.tabBars.buttons["我的"].waitForExistence(timeout:8))
+        XCTAssertFalse(app.buttons["同意并进入"].exists)
+        XCTAssertFalse(app.buttons["同意开启统计"].exists)
+    }
+    func testAnalyticsConsentCanBeEnabledAndRevoked() {
+        let app=XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"]
+        app.launch()
+        app.tabBars.buttons["我的"].tap()
+        let toggle=app.switches["使用统计"]
+        for _ in 0..<4 { if toggle.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(toggle.waitForExistence(timeout:5))
+        toggle.coordinate(withNormalizedOffset:CGVector(dx:0.9,dy:0.5)).tap()
+        let accept=app.buttons["同意开启统计"]
+        if !accept.isHittable { app.swipeUp() }
+        XCTAssertTrue(accept.waitForExistence(timeout:5))
+        app.buttons["暂不开启，继续使用"].tap()
+        XCTAssertEqual(toggle.value as? String,"0")
+        toggle.coordinate(withNormalizedOffset:CGVector(dx:0.9,dy:0.5)).tap()
+        if !accept.isHittable { app.swipeUp() }
+        accept.tap()
+        XCTAssertEqual(toggle.value as? String,"1")
+        toggle.coordinate(withNormalizedOffset:CGVector(dx:0.9,dy:0.5)).tap()
+        XCTAssertEqual(toggle.value as? String,"0")
+    }
+
+    func testForestRoundTripAndInteractions() {
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
+        let enter=app.buttons["走进爪印小镇，陪你一会儿"]
+        if !enter.isHittable { app.swipeUp() }
+        if enter.exists { enter.tap() } else { app.buttons["先逛逛纪念园"].tap() }
+        let town=app.otherElements["parkScene"]
+        XCTAssertTrue(town.waitForExistence(timeout:10))
+        expectation(for:NSPredicate(format:"value BEGINSWITH %@","位置"),evaluatedWith:town);waitForExpectations(timeout:5)
+        let position=town.value as? String
+        app.buttons["纪念碑地图"].tap()
+        app.buttons.containing(.staticText,identifier:"回忆森林").firstMatch.tap()
+        XCTAssertTrue(app.otherElements["forestScene"].waitForExistence(timeout:12))
+        XCTAssertTrue(app.buttons["森林导览"].exists)
+        let overview=XCTAttachment(screenshot:app.screenshot());overview.name="Forest-overview";overview.lifetime = .keepAlways;add(overview)
+        for (title,action,heading) in [("纪念树","看看纪念树","纪念树"),("回忆步道","打开回忆相框","回忆相框")] {
+            app.buttons["森林导览"].tap()
+            app.buttons.containing(.staticText,identifier:title).firstMatch.tap()
+            XCTAssertTrue(app.buttons[action].waitForExistence(timeout:5));app.buttons[action].tap()
+            XCTAssertTrue(app.navigationBars[heading].waitForExistence(timeout:5))
+            app.buttons["回到森林"].tap()
+        }
+        app.buttons["森林导览"].tap()
+        app.buttons.containing(.staticText,identifier:"湖边长椅").firstMatch.tap()
+        XCTAssertTrue(app.buttons["在湖边坐一会儿"].waitForExistence(timeout:5));app.buttons["在湖边坐一会儿"].tap()
+        XCTAssertTrue(app.buttons["起身继续走走"].waitForExistence(timeout:5))
+        let bench=XCTAttachment(screenshot:app.screenshot());bench.name="Forest-bench";bench.lifetime = .keepAlways;add(bench)
+        app.buttons["起身继续走走"].tap()
+        app.buttons["返回广场"].tap()
+        XCTAssertTrue(town.waitForExistence(timeout:12))
+        expectation(for:NSPredicate(format:"value == %@",position ?? ""),evaluatedWith:town);waitForExpectations(timeout:5)
+        // Repeat the transition to catch stale callbacks or retained scene state.
+        app.buttons["纪念碑地图"].tap()
+        app.buttons.containing(.staticText,identifier:"回忆森林").firstMatch.tap()
+        XCTAssertTrue(app.otherElements["forestScene"].waitForExistence(timeout:12))
+        app.buttons["返回广场"].tap()
+        XCTAssertTrue(town.waitForExistence(timeout:12))
+    }
+
+    func testOrganizedSettingsNavigation() {
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
+        app.tabBars.buttons["我的"].tap()
+        XCTAssertTrue(app.navigationBars["我的"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.staticTexts["人物形象"].exists)
+        let shot=XCTAttachment(screenshot:app.screenshot());shot.name="Organized-settings";shot.lifetime = .keepAlways;add(shot)
+        let privacy=app.buttons["隐私与使用说明"]
+        if !privacy.isHittable { app.swipeUp() }
+        XCTAssertTrue(privacy.waitForExistence(timeout:3));privacy.tap()
+        XCTAssertTrue(app.navigationBars["隐私与使用说明"].waitForExistence(timeout:3))
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["我的"].exists)
+    }
+
+    func testYouthfulAvatarPreview() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-parkAvatarStyle", "female"]
+        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
+        let enter = app.buttons["走进爪印小镇，陪你一会儿"]
+        if !enter.isHittable { app.swipeUp() }
+        if enter.exists { enter.tap() } else { app.buttons["先逛逛纪念园"].tap() }
+        let scene = app.otherElements["parkScene"]
+        XCTAssertTrue(scene.waitForExistence(timeout:10))
+        scene.pinch(withScale:2,velocity:1)
+        let shot = XCTAttachment(screenshot:app.screenshot())
+        shot.name = "Youthful-avatar-and-cat"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     func testTownMapAndPrivateRooms() throws {
-        let app=XCUIApplication();app.launch()
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
         let enter=app.buttons["走进爪印小镇，陪你一会儿"]
         if !enter.isHittable { app.swipeUp() }
         if enter.exists { enter.tap() } else { app.buttons["先逛逛纪念园"].tap() }
@@ -23,7 +133,7 @@ final class PetMemorialUITests: XCTestCase {
     }
 
     func testReminderPermission() {
-        let app=XCUIApplication();app.launch();app.swipeUp()
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch();app.swipeUp()
         app.buttons.containing(.staticText,identifier:"值得记住的日子").firstMatch.tap()
         let toggle=app.switches["纪念日提醒"]
         XCTAssertTrue(toggle.waitForExistence(timeout:5))
@@ -38,7 +148,7 @@ final class PetMemorialUITests: XCTestCase {
         expectation(for:NSPredicate(format:"value == '1'"),evaluatedWith:toggle);waitForExpectations(timeout:8)
     }
     func testFiveMemorialFeatures() throws {
-        let app=XCUIApplication();app.launch()
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
         if app.buttons["创建我的纪念花园"].waitForExistence(timeout:5) {
             app.buttons["创建我的纪念花园"].tap()
             let field=app.textFields["宠物名字（最多 30 字）"];field.tap();field.typeText("云朵QA")
@@ -121,11 +231,11 @@ final class PetMemorialUITests: XCTestCase {
     }
 
     func testLoginModesAndConsentWithoutSendingSMS() {
-        let app=XCUIApplication();app.launch();app.tabBars.buttons["我的"].tap()
+        let app=XCUIApplication();app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch();app.tabBars.buttons["我的"].tap()
         app.buttons.containing(.staticText,identifier:"登录，让陪伴与你相随").firstMatch.tap()
-        XCTAssertTrue(app.textFields["手机号"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.textFields["loginPhone"].waitForExistence(timeout:5))
         XCTAssertFalse(app.buttons["获取验证码"].isEnabled)
-        app.textFields["手机号"].tap();app.textFields["手机号"].typeText("13800000000")
+        app.textFields["loginPhone"].tap();app.textFields["loginPhone"].typeText("13800000000")
         XCTAssertFalse(app.buttons["获取验证码"].isEnabled)
         app.buttons["完成"].tap()
         let code=XCTAttachment(screenshot:app.screenshot());code.name="Login-code";code.lifetime = .keepAlways;add(code)
@@ -140,7 +250,7 @@ final class PetMemorialUITests: XCTestCase {
     }
     func testCreateGardenWriteLetterAndReopen() {
         let app = XCUIApplication()
-        app.launch()
+        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
         let create = app.buttons["创建我的纪念花园"]
         if create.waitForExistence(timeout: 8) {
             create.tap()
@@ -158,7 +268,7 @@ final class PetMemorialUITests: XCTestCase {
         editor.tap(); editor.typeText("亲爱的团子，今天也很想你。")
         app.buttons["存入信箱"].tap()
         XCTAssertTrue(app.staticTexts["亲爱的团子，今天也很想你。"].firstMatch.waitForExistence(timeout: 3))
-        app.terminate(); app.launch()
+        app.terminate(); app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN", "-disableAnalyticsSDK", "-testAnalyticsDeclined", "-testLegalAccepted"];app.launch()
         app.tabBars.buttons["信箱"].tap()
         XCTAssertTrue(app.staticTexts["亲爱的团子，今天也很想你。"].firstMatch.waitForExistence(timeout: 5))
         app.tabBars.buttons["花园"].tap()
@@ -176,5 +286,75 @@ final class PetMemorialUITests: XCTestCase {
         app.buttons["返回"].tap()
         app.tabBars.buttons["相册"].tap()
         let album=XCTAttachment(screenshot:app.screenshot());album.name="Album-thumbnails";album.lifetime = .keepAlways;add(album)
+    }
+}
+
+final class LocalizationUITests: XCTestCase {
+    private let languages: [[String]] = [
+["zh-Hans", "同意并进入", "花园", "相册", "信箱", "我的", "密码登录", "暂不登录", "用户协议与隐私保护", "纪念碑地图", "回忆森林", "森林导览", "返回广场", "返回小镇"],
+["en", "Agree and enter", "Garden", "Photos", "Letters", "Me", "Password", "Not now", "Terms and privacy", "Memorial map", "Memory Forest", "Forest guide", "Back to plaza", "Back to town"],
+["ja", "同意して進む", "庭園", "アルバム", "手紙", "マイページ", "パスワード", "今はログインしない", "利用規約とプライバシー", "記念マップ", "思い出の森", "森のガイド", "広場に戻る", "街に戻る"],
+["de", "Zustimmen und weiter", "Garten", "Fotos", "Briefe", "Profil", "Passwort", "Nicht jetzt", "Bedingungen und Datenschutz", "Gedenkkarte", "Erinnerungswald", "Waldführer", "Zurück zum Platz", "Zurück in die Stadt"],
+["fr", "Accepter et continuer", "Jardin", "Photos", "Lettres", "Profil", "Mot de passe", "Pas maintenant", "Conditions et confidentialité", "Carte commémorative", "Forêt des souvenirs", "Guide forestier", "Retour à la place", "Retour en ville"],
+["es", "Aceptar y continuar", "Jardín", "Fotos", "Cartas", "Perfil", "Contraseña", "Ahora no", "Condiciones y privacidad", "Mapa conmemorativo", "Bosque de recuerdos", "guía forestal", "volver a la plaza", "De regreso a la ciudad"],
+["zh-Hant-HK", "同意並進入", "花園", "相簿", "信箱", "我的", "密碼登入", "暫不登入", "用戶協議與私隱", "紀念碑地圖", "回憶森林", "森林導覽", "返回廣場", "返回小鎮"],
+["ko", "동의하고 시작", "정원", "사진첩", "편지함", "내 정보", "비밀번호", "나중에 로그인", "이용약관 및 개인정보", "기념 지도", "추억의 숲", "숲속 가이드", "광장으로 돌아가기", "마을로 돌아가기"],
+["ar", "الموافقة والمتابعة", "الحديقة", "الصور", "الرسائل", "حسابي", "كلمة المرور", "ليس الآن", "الشروط والخصوصية", "خريطة تذكارية", "غابة الذكريات", "دليل الغابات", "العودة إلى الساحة", "العودة إلى المدينة"]
+    ]
+    private func capture(_ app:XCUIApplication,_ name:String) {
+        let shot=XCTAttachment(screenshot:app.screenshot());shot.name=name;shot.lifetime = .keepAlways;add(shot)
+    }
+    func testNineLanguagesConsentHomeAndLogin() {
+        continueAfterFailure=false
+        for words in languages {
+            let app=XCUIApplication()
+            app.launchArguments=["-AppleLanguages","(\(words[0]))","-AppleLocale",words[0],"-disableAnalyticsSDK","-testAnalyticsDeclined","-testLegalUnreviewed"]
+            app.launch()
+            XCTAssertTrue(app.buttons["legalAccept"].waitForExistence(timeout:10),words[0])
+            XCTAssertEqual(app.buttons["legalAccept"].label,words[1])
+            XCTAssertTrue(app.staticTexts[words[8]].exists,words[0])
+            XCTAssertTrue(app.buttons["legalAccept"].isHittable)
+            XCTAssertTrue(app.buttons["legalAgreement"].isHittable)
+            XCTAssertTrue(app.buttons["legalPrivacy"].isHittable)
+            capture(app,words[0]+"-consent")
+            app.buttons["legalAccept"].tap()
+            XCTAssertTrue(app.tabBars.buttons[words[2]].waitForExistence(timeout:10),words[0])
+            capture(app,words[0]+"-home")
+            if words[0]=="ar" {
+                XCTAssertGreaterThan(app.tabBars.buttons[words[2]].frame.midX,app.tabBars.buttons[words[5]].frame.midX)
+            }
+            app.tabBars.buttons[words[3]].tap();capture(app,words[0]+"-photos")
+            app.tabBars.buttons[words[4]].tap();capture(app,words[0]+"-letters")
+            app.tabBars.buttons[words[5]].tap();capture(app,words[0]+"-settings")
+            let login=app.buttons["openLogin"]
+            XCTAssertTrue(login.waitForExistence(timeout:5));login.tap()
+            XCTAssertTrue(app.textFields["loginPhone"].waitForExistence(timeout:5))
+            capture(app,words[0]+"-sms-login")
+            app.segmentedControls.buttons[words[6]].tap()
+            XCTAssertTrue(app.secureTextFields.firstMatch.exists)
+            capture(app,words[0]+"-password-login")
+            app.buttons[words[7]].tap();app.terminate()
+        }
+    }
+    func testTownAndForestInEnglishGermanAndArabic() {
+        continueAfterFailure=false
+        for words in languages where ["en","de","ar"].contains(words[0]) {
+            let app=XCUIApplication()
+            app.launchArguments=["-AppleLanguages","(\(words[0]))","-AppleLocale",words[0],"-disableAnalyticsSDK","-testAnalyticsDeclined","-testLegalAccepted"]
+            app.launch()
+            let enter=app.buttons["enterTown"]
+            XCTAssertTrue(enter.waitForExistence(timeout:10))
+            if !enter.isHittable { app.swipeUp() };enter.tap()
+            XCTAssertTrue(app.otherElements["parkScene"].waitForExistence(timeout:12))
+            capture(app,words[0]+"-town")
+            app.buttons[words[9]].tap()
+            XCTAssertTrue(app.buttons.containing(.staticText,identifier:words[10]).firstMatch.waitForExistence(timeout:5))
+            capture(app,words[0]+"-map")
+            app.buttons.containing(.staticText,identifier:words[10]).firstMatch.tap()
+            XCTAssertTrue(app.otherElements["forestScene"].waitForExistence(timeout:12))
+            capture(app,words[0]+"-forest")
+            app.buttons[words[11]].tap();capture(app,words[0]+"-forest-guide")
+            app.terminate()
+        }
     }
 }
